@@ -12,9 +12,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Hotel Khuji — Transit Hotel PMS",
+  title: "Hotel Khuji — Easy Hotel PMS",
   description:
-    "Hyper-fast Property Management System for transit hotels near Ashkona Airport. Manage rooms, walk-ins, and online bookings in one place.",
+    "Hyper-fast Property Management System for transit hotels. Manage rooms, walk-ins, and online bookings in one place.",
   keywords: ["hotel", "PMS", "transit", "Ashkona", "airport", "booking"],
 };
 

@@ -21,11 +21,16 @@ CREATE TABLE IF NOT EXISTS public.hotels (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   owner_id    UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  name        TEXT NOT NULL,
-  address     TEXT NOT NULL,
-  latitude    DOUBLE PRECISION,
-  longitude   DOUBLE PRECISION
+  name                TEXT NOT NULL,
+  address             TEXT NOT NULL,
+  latitude            DOUBLE PRECISION,
+  longitude           DOUBLE PRECISION,
+  subscription_status TEXT NOT NULL DEFAULT 'pending',
+  cover_image_url     TEXT,
+  amenities           TEXT[] DEFAULT ARRAY[]::TEXT[]
 );
+
+CREATE INDEX IF NOT EXISTS idx_hotels_subscription_status ON public.hotels(subscription_status);
 
 CREATE INDEX IF NOT EXISTS idx_hotels_owner_id ON public.hotels(owner_id);
 
@@ -70,6 +75,8 @@ CREATE TABLE IF NOT EXISTS public.rooms (
   type            TEXT NOT NULL DEFAULT 'standard',
   base_price      NUMERIC(10,2) NOT NULL DEFAULT 0,
   current_status  room_status NOT NULL DEFAULT 'available',
+  image_urls      TEXT[] DEFAULT ARRAY[]::TEXT[],
+  facilities      TEXT[] DEFAULT ARRAY[]::TEXT[],
 
   UNIQUE (hotel_id, room_number)
 );
@@ -202,30 +209,95 @@ CREATE TRIGGER trg_checkout_frees_room
 
 
 -- ──────────────────────────────────────────────────────────────
--- 6. SEED DATA (Ashkona Airport Transit Inn + 8 Rooms)
+-- 6. STORAGE BUCKET & POLICIES ('hotel-images')
 -- ──────────────────────────────────────────────────────────────
-INSERT INTO public.hotels (id, name, address, latitude, longitude)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'hotel-images',
+  'hotel-images',
+  true,
+  5242880, -- 5 MB max per image
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/avif']
+)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Note: RLS is already permanently enabled on storage.objects by Supabase out of the box.
+
+DROP POLICY IF EXISTS "Public users can view hotel images" ON storage.objects;
+CREATE POLICY "Public users can view hotel images"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'hotel-images');
+
+DROP POLICY IF EXISTS "Authenticated owners can upload hotel images" ON storage.objects;
+CREATE POLICY "Authenticated owners can upload hotel images"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (bucket_id = 'hotel-images');
+
+DROP POLICY IF EXISTS "Authenticated owners can update hotel images" ON storage.objects;
+CREATE POLICY "Authenticated owners can update hotel images"
+  ON storage.objects FOR UPDATE
+  TO authenticated
+  USING (bucket_id = 'hotel-images')
+  WITH CHECK (bucket_id = 'hotel-images');
+
+DROP POLICY IF EXISTS "Authenticated owners can delete hotel images" ON storage.objects;
+CREATE POLICY "Authenticated owners can delete hotel images"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (bucket_id = 'hotel-images');
+
+
+-- ──────────────────────────────────────────────────────────────
+-- 7. SEED DATA (Ashkona Airport Transit Inn + Rooms)
+-- ──────────────────────────────────────────────────────────────
+INSERT INTO public.hotels (id, name, address, latitude, longitude, subscription_status, cover_image_url, amenities)
 VALUES (
   'a0000000-0000-0000-0000-000000000001',
   'Ashkona Airport Transit Inn',
   'Haji Camp Road, Ashkona, Uttara, Dhaka 1230',
   23.8512,
-  90.4101
+  90.4101,
+  'active',
+  'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+  ARRAY['Free Airport Shuttle', '24/7 Check-in', 'High-Speed Wi-Fi', 'Soundproof Rooms', 'Power Backup', 'Complimentary Breakfast']
 )
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
-  address = EXCLUDED.address;
+  address = EXCLUDED.address,
+  subscription_status = EXCLUDED.subscription_status,
+  cover_image_url = EXCLUDED.cover_image_url,
+  amenities = EXCLUDED.amenities;
 
-INSERT INTO public.rooms (hotel_id, room_number, type, base_price, current_status)
+INSERT INTO public.rooms (hotel_id, room_number, type, base_price, current_status, image_urls, facilities)
 VALUES
-  ('a0000000-0000-0000-0000-000000000001', '101', 'Standard Single', 1800.00, 'available'),
-  ('a0000000-0000-0000-0000-000000000001', '102', 'Standard Queen', 2500.00, 'available'),
-  ('a0000000-0000-0000-0000-000000000001', '103', 'Deluxe Double', 3500.00, 'available'),
-  ('a0000000-0000-0000-0000-000000000001', '104', 'Executive Transit Suite', 5000.00, 'available'),
-  ('a0000000-0000-0000-0000-000000000001', '201', 'Standard Twin', 2800.00, 'available'),
-  ('a0000000-0000-0000-0000-000000000001', '202', 'Airport View Deluxe', 4200.00, 'available'),
-  ('a0000000-0000-0000-0000-000000000001', '203', 'Transit Pod (Hourly)', 1200.00, 'available'),
-  ('a0000000-0000-0000-0000-000000000001', '204', 'Family Suite', 6500.00, 'maintenance')
+  ('a0000000-0000-0000-0000-000000000001', '101', 'Standard Single', 1800.00, 'available',
+   ARRAY['https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80'],
+   ARRAY['AC', 'Attached Bath', 'Free Wi-Fi', 'Work Desk', 'Daily Housekeeping']),
+  ('a0000000-0000-0000-0000-000000000001', '102', 'Standard Queen', 2500.00, 'available',
+   ARRAY['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80'],
+   ARRAY['Queen Bed', 'AC', 'Hot Water', 'Smart TV', 'Free Wi-Fi', 'Airport Shuttle']),
+  ('a0000000-0000-0000-0000-000000000001', '103', 'Deluxe Double', 3500.00, 'available',
+   ARRAY['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80'],
+   ARRAY['King Bed', 'AC', 'Soundproof Windows', 'Smart TV', 'Mini Fridge', 'City View']),
+  ('a0000000-0000-0000-0000-000000000001', '104', 'Executive Transit Suite', 5000.00, 'available',
+   ARRAY['https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80'],
+   ARRAY['Luxury King Suite', 'Airport Runway View', 'Espresso Machine', 'Bathtub', 'High-speed Wi-Fi']),
+  ('a0000000-0000-0000-0000-000000000001', '201', 'Standard Twin', 2800.00, 'available',
+   ARRAY['https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=800&q=80'],
+   ARRAY['2 Twin Beds', 'AC', 'Attached Bath', 'Free Wi-Fi', 'Power Backup']),
+  ('a0000000-0000-0000-0000-000000000001', '202', 'Airport View Deluxe', 4200.00, 'available',
+   ARRAY['https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=800&q=80'],
+   ARRAY['Panoramic Airport View', 'Soundproof Triple Glazing', 'King Bed', 'Breakfast Included']),
+  ('a0000000-0000-0000-0000-000000000001', '203', 'Transit Pod (Hourly)', 1200.00, 'available',
+   ARRAY['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80'],
+   ARRAY['Hourly Transit Capsule', 'Secure Locker', 'High-Speed Wi-Fi', 'Shared Hot Shower', 'Charging Station']),
+  ('a0000000-0000-0000-0000-000000000001', '204', 'Family Suite', 6500.00, 'maintenance',
+   ARRAY['https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=800&q=80'],
+   ARRAY['Family Suite (2 Queen Beds)', 'Living Area', '2 Bathrooms', 'Soundproof', 'Kitchenette'])
 ON CONFLICT (hotel_id, room_number) DO UPDATE SET
   type = EXCLUDED.type,
-  base_price = EXCLUDED.base_price;
+  base_price = EXCLUDED.base_price,
+  image_urls = EXCLUDED.image_urls,
+  facilities = EXCLUDED.facilities;
+
