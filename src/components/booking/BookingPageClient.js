@@ -19,18 +19,22 @@ export default function BookingPageClient({ hotelId }) {
 
   useEffect(() => {
     async function fetchData() {
+      const targetId = (hotelId === 'demo' || !hotelId)
+        ? (process.env.NEXT_PUBLIC_DEMO_HOTEL_ID || 'a0000000-0000-0000-0000-000000000001')
+        : hotelId;
+
       // Fetch hotel info
       const { data: hotelData } = await supabase
         .from('hotels')
         .select('*')
-        .eq('id', hotelId)
+        .eq('id', targetId)
         .single();
 
       // Fetch available rooms
       const { data: roomsData } = await supabase
         .from('rooms')
         .select('*')
-        .eq('hotel_id', hotelId)
+        .eq('hotel_id', targetId)
         .eq('current_status', 'available')
         .order('base_price', { ascending: true });
 

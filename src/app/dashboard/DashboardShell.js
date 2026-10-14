@@ -9,9 +9,11 @@ import LiveClock from '@/components/dashboard/LiveClock';
 export default async function DashboardShell({ searchParams }) {
   await connection();
 
-  const params = await searchParams;
-  const hotelId = params?.hotelId || process.env.NEXT_PUBLIC_DEMO_HOTEL_ID || 'demo';
-  const hotelName = params?.hotelName || 'Hotel Khuji';
+  const rawHotelId = params?.hotelId;
+  const hotelId = (rawHotelId && rawHotelId !== 'demo')
+    ? rawHotelId
+    : (process.env.NEXT_PUBLIC_DEMO_HOTEL_ID || 'a0000000-0000-0000-0000-000000000001');
+  const hotelName = params?.hotelName || 'Ashkona Airport Transit Inn';
 
   return (
     <div className="min-h-screen bg-surface-0">
