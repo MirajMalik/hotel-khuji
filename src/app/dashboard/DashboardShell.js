@@ -9,6 +9,7 @@ import LiveClock from '@/components/dashboard/LiveClock';
 export default async function DashboardShell({ searchParams }) {
   await connection();
 
+  const params = await searchParams;
   const rawHotelId = params?.hotelId;
   const hotelId = (rawHotelId && rawHotelId !== 'demo')
     ? rawHotelId
