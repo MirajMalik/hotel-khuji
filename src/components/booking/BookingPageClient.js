@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import AvailableRoomCard from '@/components/booking/AvailableRoomCard';
 import BookingForm from '@/components/booking/BookingForm';
@@ -8,7 +9,7 @@ import MapPlaceholder from '@/components/booking/MapPlaceholder';
 
 /**
  * BookingPageClient — Client component for the public booking page.
- * Fetches hotel details and available rooms from Supabase.
+ * Fetches hotel details and available rooms from Express + PostgreSQL (with Supabase fallback).
  */
 export default function BookingPageClient({ hotelId }) {
   const [hotel, setHotel] = useState(null);
@@ -23,24 +24,44 @@ export default function BookingPageClient({ hotelId }) {
         ? (process.env.NEXT_PUBLIC_DEMO_HOTEL_ID || 'a0000000-0000-0000-0000-000000000001')
         : hotelId;
 
-      // Fetch hotel info
-      const { data: hotelData } = await supabase
-        .from('hotels')
-        .select('*')
-        .eq('id', targetId)
-        .single();
+      try {
+        // 1. Try Express API
+        try {
+          const res = await api.get(`/hotels/${targetId}`);
+          if (res?.data) {
+            setHotel(res.data);
+            const available = (res.data.rooms || []).filter(
+              (r) => r.current_status === 'available'
+            );
+            setRooms(available);
+            setLoading(false);
+            return;
+          }
+        } catch (expressErr) {
+          // Express server idle, fallback to Supabase
+        }
 
-      // Fetch available rooms
-      const { data: roomsData } = await supabase
-        .from('rooms')
-        .select('*')
-        .eq('hotel_id', targetId)
-        .eq('current_status', 'available')
-        .order('base_price', { ascending: true });
+        // 2. Supabase Fallback
+        const { data: hotelData } = await supabase
+          .from('hotels')
+          .select('*')
+          .eq('id', targetId)
+          .single();
 
-      if (hotelData) setHotel(hotelData);
-      if (roomsData) setRooms(roomsData);
-      setLoading(false);
+        const { data: roomsData } = await supabase
+          .from('rooms')
+          .select('*')
+          .eq('hotel_id', targetId)
+          .eq('current_status', 'available')
+          .order('base_price', { ascending: true });
+
+        if (hotelData) setHotel(hotelData);
+        if (roomsData) setRooms(roomsData);
+      } catch (err) {
+        console.error('Error fetching booking data:', err);
+      } finally {
+        setLoading(false);
+      }
     }
 
     fetchData();

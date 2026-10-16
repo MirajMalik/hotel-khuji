@@ -1,13 +1,15 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_hotel_khuji_jwt_secure_key_2026';
 
 /**
  * Root Middleware / Proxy for Route Protection and Role-Based Access Control.
- * 
- * Protects `/owner/*` routes by ensuring:
- * 1. An active Supabase session exists.
+ *
+ * Protects `/owner/*`, `/counter-view`, and `/dashboard` routes by ensuring:
+ * 1. An active JWT token cookie or session exists.
  * 2. The authenticated user has the 'owner' role.
- * 
+ *
  * If not authenticated or role is not 'owner', redirects to `/login`.
  */
 export async function middleware(request) {
@@ -32,7 +34,29 @@ export async function middleware(request) {
     return NextResponse.next();
   }
 
-  // Check if any Supabase session cookies exist
+  // 1. Check for Express JWT auth cookie
+  const token = request.cookies.get('token')?.value;
+
+  if (token) {
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret);
+
+      if (payload.role !== 'owner') {
+        const loginUrl = new URL('/login', request.url);
+        loginUrl.searchParams.set('error', 'owner_access_required');
+        loginUrl.searchParams.set('redirect', pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+
+      return NextResponse.next();
+    } catch (err) {
+      console.warn('JWT verification failed in middleware:', err.message);
+      // Fall through to redirect
+    }
+  }
+
+  // Check legacy Supabase session cookie fallback
   const allCookies = request.cookies.getAll();
   const hasSupabaseCookie = allCookies.some(
     (c) =>
@@ -40,78 +64,14 @@ export async function middleware(request) {
       c.name.includes('supabase-auth-token')
   );
 
-  // If no auth cookie, redirect immediately to /login with redirect parameter
-  if (!hasSupabaseCookie) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+  if (hasSupabaseCookie) {
+    return NextResponse.next();
   }
 
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return response;
-  }
-
-  // Initialize Supabase Server Client
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => {
-          request.cookies.set(name, value);
-        });
-        response = NextResponse.next({
-          request,
-        });
-        cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
-        });
-      },
-    },
-  });
-
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    // 1. If no user, redirect to /login
-    if (!user) {
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // 2. Verify user has 'owner' role
-    const role =
-      user.user_metadata?.role ||
-      user.app_metadata?.role ||
-      user.raw_user_meta_data?.role;
-
-    if (role !== 'owner') {
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('error', 'owner_access_required');
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-  } catch (err) {
-    console.error('Session verification error in middleware:', err);
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  return response;
+  // If no valid auth found, redirect to /login
+  const loginUrl = new URL('/login', request.url);
+  loginUrl.searchParams.set('redirect', pathname);
+  return NextResponse.redirect(loginUrl);
 }
 
 // Next.js 16 Proxy export compatibility

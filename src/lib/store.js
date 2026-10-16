@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from './supabase';
+import { api } from './api';
 import { todayISO, tomorrowISO } from './utils';
 
 /**
@@ -60,36 +60,19 @@ export const useHotelStore = create((set, get) => ({
     }));
 
     try {
-      // 2. Insert into Supabase `bookings` table
-      const { data: bookingData, error: bookingError } = await supabase
-        .from('bookings')
-        .insert({
-          hotel_id: targetHotelId,
-          room_id: roomId,
-          guest_name: guestName,
-          guest_phone: guestPhone,
-          check_in_date: checkIn,
-          check_out_date: checkOut,
-          booking_source: 'walk_in',
-          total_amount: totalAmount,
-          status: 'confirmed',
-        })
-        .select()
-        .single();
+      // 2. Call Express + PostgreSQL Walk-In Booking Endpoint
+      const response = await api.post('/bookings/walk-in', {
+        hotelId: targetHotelId,
+        roomId,
+        guestName,
+        guestPhone,
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
+        bookingSource: 'walk_in',
+        totalAmount,
+      });
 
-      if (bookingError) {
-        throw new Error(bookingError.message || 'Failed to create booking in Supabase');
-      }
-
-      // 3. Explicitly update `rooms` table current_status in Supabase
-      const { error: roomUpdateError } = await supabase
-        .from('rooms')
-        .update({ current_status: 'occupied' })
-        .eq('id', roomId);
-
-      if (roomUpdateError) {
-        console.warn('Room update notice (may have been handled by DB trigger):', roomUpdateError);
-      }
+      const bookingData = response.data;
 
       // 4. Update Zustand store with the confirmed booking and success toast
       const newBookingRecord = {

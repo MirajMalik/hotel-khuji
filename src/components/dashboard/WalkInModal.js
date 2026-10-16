@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, todayISO, tomorrowISO, calculateNights } from '@/lib/utils';
 
@@ -48,6 +49,25 @@ export default function WalkInModal({ room, hotelId, onClose, onSuccess }) {
     setLoading(true);
 
     try {
+      // 1. Attempt Express + PostgreSQL Walk-in API
+      try {
+        await api.post('/bookings/walk-in', {
+          hotelId,
+          roomId: room.id,
+          guestName: form.guest_name.trim(),
+          guestPhone: form.guest_phone.trim(),
+          checkInDate: todayISO(),
+          checkOutDate: form.check_out_date,
+          bookingSource: 'walk_in',
+          totalAmount: form.total_amount,
+        });
+        onSuccess();
+        return;
+      } catch (expressErr) {
+        console.warn('Express walk-in fallback to Supabase:', expressErr.message);
+      }
+
+      // 2. Supabase Fallback
       const { error: insertErr } = await supabase.from('bookings').insert({
         hotel_id: hotelId,
         room_id: room.id,

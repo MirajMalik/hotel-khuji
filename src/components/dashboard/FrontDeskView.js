@@ -1,6 +1,6 @@
-'use client';
-
 import { useState, useEffect, useCallback } from 'react';
+import { api } from '@/lib/api';
+import { getSocket } from '@/lib/socket';
 import { supabase } from '@/lib/supabase';
 import RoomCard from './RoomCard';
 import WalkInModal from './WalkInModal';
@@ -12,7 +12,7 @@ import StatusBar from './StatusBar';
  * - Fetches rooms for the given hotel in real-time
  * - Displays them in a responsive grid, color-coded by status
  * - Opens walk-in modal on click of available room
- * - Subscribes to Supabase Realtime for live updates
+ * - Subscribes to Socket.io & Supabase Realtime for live updates
  */
 export default function FrontDeskView({ hotelId, hotelName }) {
   const [rooms, setRooms] = useState([]);
@@ -20,24 +20,43 @@ export default function FrontDeskView({ hotelId, hotelName }) {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
 
-  // Fetch rooms from Supabase
+  // Fetch rooms from Express + PostgreSQL (with Supabase fallback)
   const fetchRooms = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('rooms')
-      .select('*')
-      .eq('hotel_id', hotelId)
-      .order('room_number', { ascending: true });
+    try {
+      const res = await api.get(`/rooms/hotel/${hotelId}`);
+      if (res?.data) {
+        setRooms(res.data);
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Fallback to Supabase if Express server is idle
+      const { data, error } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('hotel_id', hotelId)
+        .order('room_number', { ascending: true });
 
-    if (!error && data) {
-      setRooms(data);
+      if (!error && data) {
+        setRooms(data);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [hotelId]);
 
   useEffect(() => {
     fetchRooms();
 
-    // Subscribe to real-time room status changes
+    // 1. Socket.io Real-time Subscription (Express + PostgreSQL)
+    const socket = getSocket();
+    if (socket) {
+      socket.emit('join_hotel', hotelId);
+      socket.on('room_status_changed', () => fetchRooms());
+      socket.on('new_booking', () => fetchRooms());
+    }
+
+    // 2. Supabase Realtime channel fallback
     const channel = supabase
       .channel(`rooms-${hotelId}`)
       .on(
@@ -49,13 +68,17 @@ export default function FrontDeskView({ hotelId, hotelName }) {
           filter: `hotel_id=eq.${hotelId}`,
         },
         () => {
-          // Refetch on any change — simple and reliable
           fetchRooms();
         }
       )
       .subscribe();
 
     return () => {
+      if (socket) {
+        socket.off('room_status_changed');
+        socket.off('new_booking');
+        socket.emit('leave_hotel', hotelId);
+      }
       supabase.removeChannel(channel);
     };
   }, [hotelId, fetchRooms]);

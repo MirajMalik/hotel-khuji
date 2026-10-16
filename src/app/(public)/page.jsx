@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
 import AuthForm from '@/components/auth/AuthForm';
@@ -37,7 +38,19 @@ export default function MarketplaceHomePage() {
   useEffect(() => {
     async function fetchActiveHotels() {
       try {
-        // Fetch hotels where subscription_status = 'active'
+        // 1. Try Express + PostgreSQL endpoint
+        try {
+          const res = await api.get('/hotels');
+          if (res?.data && res.data.length > 0) {
+            setHotels(res.data);
+            setLoading(false);
+            return;
+          }
+        } catch (expressErr) {
+          // Express server not responding, fallback to Supabase
+        }
+
+        // 2. Supabase Fallback
         const { data, error } = await supabase
           .from('hotels')
           .select('*, rooms(*)')
@@ -45,8 +58,6 @@ export default function MarketplaceHomePage() {
           .order('name', { ascending: true });
 
         if (error) {
-          // If the column doesn't exist yet (before SQL migration is executed),
-          // fallback gracefully to fetch all hotels so the app stays resilient
           console.warn('Subscription column query fallback:', error.message);
           const fallbackRes = await supabase.from('hotels').select('*, rooms(*)');
           if (fallbackRes.data) {
@@ -55,7 +66,6 @@ export default function MarketplaceHomePage() {
         } else if (data && data.length > 0) {
           setHotels(data);
         } else {
-          // If no active hotels found, attempt fallback
           const allHotels = await supabase.from('hotels').select('*, rooms(*)');
           if (allHotels.data) {
             setHotels(allHotels.data);

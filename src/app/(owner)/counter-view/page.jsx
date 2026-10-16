@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { api } from '@/lib/api';
+import { getSocket } from '@/lib/socket';
 import { supabase } from '@/lib/supabase';
 import { useHotelStore } from '@/lib/store';
 import { formatCurrency, todayISO, tomorrowISO } from '@/lib/utils';
@@ -68,7 +70,23 @@ export default function CounterViewPage() {
   // 1. Fetch Hotel info & ONLY 'available' rooms for this owner's hotel
   const fetchAvailableRooms = useCallback(async () => {
     try {
-      // Fetch hotel details
+      // 1. Fetch hotel details from Express + Postgres (with fallback)
+      try {
+        const hotelRes = await api.get(`/hotels/${hotelId}`);
+        if (hotelRes?.data) {
+          setHotel(hotelRes.data);
+          const available = (hotelRes.data.rooms || []).filter(
+            (r) => r.current_status === 'available'
+          );
+          setRooms(available);
+          setLoading(false);
+          return;
+        }
+      } catch (expressErr) {
+        // Fallback to Supabase
+      }
+
+      // Supabase fallback
       const { data: hotelData } = await supabase
         .from('hotels')
         .select('*')
@@ -100,8 +118,15 @@ export default function CounterViewPage() {
   useEffect(() => {
     fetchAvailableRooms();
 
-    // Subscribe to realtime room updates so when any room becomes occupied or freed,
-    // the digital brochure updates automatically
+    // 1. Socket.io Real-time update (Express + PostgreSQL)
+    const socket = getSocket();
+    if (socket) {
+      socket.emit('join_hotel', hotelId);
+      socket.on('room_status_changed', () => fetchAvailableRooms());
+      socket.on('new_booking', () => fetchAvailableRooms());
+    }
+
+    // 2. Supabase Realtime channel fallback
     const channel = supabase
       .channel(`brochure-rooms-${hotelId}`)
       .on(
@@ -119,6 +144,11 @@ export default function CounterViewPage() {
       .subscribe();
 
     return () => {
+      if (socket) {
+        socket.off('room_status_changed');
+        socket.off('new_booking');
+        socket.emit('leave_hotel', hotelId);
+      }
       supabase.removeChannel(channel);
     };
   }, [hotelId, fetchAvailableRooms]);

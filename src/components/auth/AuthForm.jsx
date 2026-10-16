@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 /**
  * Universal Authentication Form Component
- * Supports Customer and Owner Registration & Login.
+ * Supports Customer and Owner Registration & Login via Express JWT with fallback.
  * Allows quick role-based signup (with metadata: role='owner' or role='customer').
  */
 export default function AuthForm({ defaultRole = 'customer', onSuccess, initialMode = 'login', redirectPath }) {
@@ -29,50 +30,66 @@ export default function AuthForm({ defaultRole = 'customer', onSuccess, initialM
 
     try {
       if (mode === 'register') {
-        // Sign up with Supabase Auth including user_metadata role
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              role: role,
-              full_name: fullName,
-              hotel_name: role === 'owner' ? hotelName : undefined,
+        let userRecord = null;
+        try {
+          // Attempt Express + PostgreSQL backend registration
+          const res = await api.post('/auth/register', {
+            email,
+            password,
+            full_name: fullName,
+            role,
+            phone: '',
+          });
+          userRecord = res.user;
+        } catch (expressErr) {
+          console.warn('Express register fallback to Supabase:', expressErr.message);
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                role: role,
+                full_name: fullName,
+                hotel_name: role === 'owner' ? hotelName : undefined,
+              },
             },
-          },
-        });
-
-        if (error) throw error;
-
-        // If email confirmation is required or auto-confirmed
-        if (data?.session) {
-          setSuccessMsg('Account created successfully! Redirecting...');
-          if (role === 'owner') {
-            document.cookie = 'demo_role=owner; path=/; max-age=86400';
-          }
-          setTimeout(() => {
-            if (onSuccess) onSuccess(data.user);
-            router.push(redirectPath || (role === 'owner' ? '/counter-view' : '/'));
-            router.refresh();
-          }, 800);
-        } else {
-          setSuccessMsg(
-            'Registration successful! Please check your email to confirm, or try logging in.'
-          );
+          });
+          if (error) throw error;
+          userRecord = data?.user;
         }
+
+        setSuccessMsg('Account created successfully! Redirecting...');
+        if (role === 'owner') {
+          document.cookie = 'demo_role=owner; path=/; max-age=86400';
+        }
+        setTimeout(() => {
+          if (onSuccess) onSuccess(userRecord);
+          router.push(redirectPath || (role === 'owner' ? '/counter-view' : '/'));
+          router.refresh();
+        }, 800);
       } else {
-        // Sign in with Password
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        // Mode === 'login'
+        let userRecord = null;
+        let userRole = role;
 
-        if (error) throw error;
-
-        const userRole =
-          data.user?.user_metadata?.role ||
-          data.user?.app_metadata?.role ||
-          (email.includes('owner') ? 'owner' : 'customer');
+        try {
+          // Attempt Express + PostgreSQL login
+          const res = await api.post('/auth/login', { email, password });
+          userRecord = res.user;
+          userRole = res.user?.role || role;
+        } catch (expressErr) {
+          console.warn('Express login fallback to Supabase:', expressErr.message);
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (error) throw error;
+          userRecord = data.user;
+          userRole =
+            data.user?.user_metadata?.role ||
+            data.user?.app_metadata?.role ||
+            (email.includes('owner') ? 'owner' : 'customer');
+        }
 
         if (userRole === 'owner') {
           document.cookie = 'demo_role=owner; path=/; max-age=86400';
@@ -80,7 +97,7 @@ export default function AuthForm({ defaultRole = 'customer', onSuccess, initialM
 
         setSuccessMsg('Welcome back! Logging you in...');
         setTimeout(() => {
-          if (onSuccess) onSuccess(data.user);
+          if (onSuccess) onSuccess(userRecord);
           router.push(redirectPath || (userRole === 'owner' ? '/counter-view' : '/'));
           router.refresh();
         }, 600);

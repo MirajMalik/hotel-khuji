@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, tomorrowISO, calculateNights } from '@/lib/utils';
 
@@ -33,6 +34,25 @@ export default function BookingForm({ room, hotelId, onSuccess, onCancel }) {
     setLoading(true);
 
     try {
+      // 1. Attempt Express + PostgreSQL booking endpoint
+      try {
+        await api.post('/bookings', {
+          hotelId,
+          roomId: room.id,
+          guestName: form.guest_name.trim(),
+          guestPhone: form.guest_phone.trim(),
+          checkInDate: form.check_in_date,
+          checkOutDate: form.check_out_date,
+          bookingSource: 'web',
+          totalAmount,
+        });
+        onSuccess();
+        return;
+      } catch (expressErr) {
+        console.warn('Express booking fallback to Supabase:', expressErr.message);
+      }
+
+      // 2. Supabase Fallback
       const { error: insertErr } = await supabase.from('bookings').insert({
         hotel_id: hotelId,
         room_id: room.id,
