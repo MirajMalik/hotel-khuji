@@ -1,10 +1,14 @@
 import { connection } from 'next/server';
+import Link from 'next/link';
 import FrontDeskView from '@/components/dashboard/FrontDeskView';
 import LiveClock from '@/components/dashboard/LiveClock';
 
 /**
- * DashboardShell — Async server component that reads searchParams.
- * Must be rendered inside <Suspense> because it calls connection().
+ * DashboardShell — Operational Front Desk PMS view.
+ * Now equipped with comprehensive back navigation links to:
+ *  - /owner/dashboard (Owner Management Panel)
+ *  - /counter-view (Receptionist Counter View)
+ *  - /hotels (Guest Hotel Marketplace)
  */
 export default async function DashboardShell({ searchParams }) {
   await connection();
@@ -17,31 +21,69 @@ export default async function DashboardShell({ searchParams }) {
   const hotelName = params?.hotelName || 'Ashkona Airport Transit Inn';
 
   return (
-    <div className="min-h-screen bg-surface-0">
+    <div className="min-h-screen bg-surface-0 flex flex-col">
       {/* Top navigation bar */}
-      <nav className="sticky top-0 z-40 flex items-center justify-between px-6 py-3 bg-surface-1/80 backdrop-blur-xl border-b border-zinc-800/50">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-500/20">
-            <svg className="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008V7.5z" />
-            </svg>
-          </div>
-          <span className="text-sm font-semibold text-zinc-200">Hotel Khuji</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-500 font-medium border border-brand-500/20">
-            PMS
-          </span>
-        </div>
+      <nav className="sticky top-0 z-40 bg-surface-1/90 backdrop-blur-xl border-b border-zinc-800/80 px-4 sm:px-6 py-3">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Left: Brand + Quick Back Navigation */}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/owner/dashboard"
+              className="flex items-center gap-2 group text-zinc-400 hover:text-white transition-colors"
+              title="Return to Owner Management Panel"
+            >
+              <span className="w-8 h-8 rounded-xl bg-surface-2 group-hover:bg-brand-600/20 border border-zinc-700 group-hover:border-brand-500/50 flex items-center justify-center text-xs text-brand-400 transition-all">
+                ←
+              </span>
+              <span className="text-xs font-bold text-zinc-300 group-hover:text-white">
+                Back to Owner Panel
+              </span>
+            </Link>
 
-        <div className="flex items-center gap-3">
-          <LiveClock />
-          <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
-            <span className="text-xs font-semibold text-zinc-400">FD</span>
+            <span className="text-zinc-600">|</span>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black text-white">{hotelName}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 font-bold border border-brand-500/20">
+                Front Desk PMS
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Quick Switcher Links & Clock */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <Link
+              href="/counter-view"
+              className="px-3 py-1.5 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-colors flex items-center gap-1.5"
+            >
+              <span>🖥️</span>
+              <span>Counter View</span>
+            </Link>
+
+            <Link
+              href="/hotels"
+              className="px-3 py-1.5 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-colors flex items-center gap-1.5"
+            >
+              <span>🏨</span>
+              <span>Hotels Marketplace</span>
+            </Link>
+
+            <div className="hidden md:flex items-center">
+              <LiveClock />
+            </div>
+
+            <Link
+              href="/login"
+              className="px-3 py-1.5 text-xs font-semibold bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 border border-rose-900/60 rounded-xl transition-colors"
+            >
+              Switch Account
+            </Link>
           </div>
         </div>
       </nav>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
         <FrontDeskView hotelId={hotelId} hotelName={hotelName} />
       </main>
     </div>

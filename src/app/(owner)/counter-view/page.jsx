@@ -251,20 +251,35 @@ export default function CounterViewPage() {
           </div>
 
           {/* Presentation Toolbar Controls */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="px-3.5 py-2 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-colors flex items-center gap-2"
-              title="Toggle Guest Presentation Mode"
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <Link
+              href="/owner/dashboard"
+              className="px-3 py-2 text-xs font-bold text-brand-300 hover:text-white bg-surface-2 hover:bg-surface-3 rounded-xl border border-brand-500/30 transition-colors flex items-center gap-1.5"
             >
-              {isFullscreen ? 'Exit Guest View' : '🖥️ Presentation Mode'}
-            </button>
+              <span>←</span>
+              <span>Owner Panel</span>
+            </Link>
             <Link
               href="/dashboard"
-              className="px-3.5 py-2 text-xs font-medium text-zinc-400 hover:text-zinc-200 bg-surface-2 hover:bg-surface-3 rounded-xl border border-zinc-800 transition-colors"
+              className="px-3 py-2 text-xs font-semibold text-zinc-300 hover:text-white bg-surface-2 hover:bg-surface-3 rounded-xl border border-zinc-800 transition-colors flex items-center gap-1.5"
             >
-              Back to Full PMS →
+              <span>🏨</span>
+              <span>Front Desk PMS</span>
             </Link>
+            <Link
+              href="/hotels"
+              className="px-3 py-2 text-xs font-semibold text-zinc-300 hover:text-white bg-surface-2 hover:bg-surface-3 rounded-xl border border-zinc-800 transition-colors flex items-center gap-1.5"
+            >
+              <span>🌐</span>
+              <span>Marketplace</span>
+            </Link>
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="px-3 py-2 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-colors flex items-center gap-1.5"
+              title="Toggle Guest Presentation Mode"
+            >
+              {isFullscreen ? 'Exit Guest View' : '🖥️ Presentation'}
+            </button>
           </div>
         </div>
 

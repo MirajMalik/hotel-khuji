@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/api';
-import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 /**
  * Universal Authentication Form Component
- * Supports Customer and Owner Registration & Login via Express JWT with fallback.
- * Allows quick role-based signup (with metadata: role='owner' or role='customer').
+ * Connects directly to Express + PostgreSQL backend (JWT + Cookie).
+ * Role-based redirect:
+ *  - Customer registration/login -> /hotels (all hotels + booking + distance + social contact)
+ *  - Owner registration/login -> /owner/dashboard (room management + bookings + staff/money tracking)
  */
 export default function AuthForm({ defaultRole = 'customer', onSuccess, initialMode = 'login', redirectPath }) {
   const router = useRouter();
@@ -22,6 +23,10 @@ export default function AuthForm({ defaultRole = 'customer', onSuccess, initialM
   const [errorMsg, setErrorMsg] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
+  const getDefaultRedirect = (resolvedRole) => {
+    return resolvedRole === 'owner' ? '/owner/dashboard' : '/hotels';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -30,95 +35,59 @@ export default function AuthForm({ defaultRole = 'customer', onSuccess, initialM
 
     try {
       if (mode === 'register') {
-        let userRecord = null;
-        try {
-          // Attempt Express + PostgreSQL backend registration
-          const res = await api.post('/auth/register', {
-            email,
-            password,
-            full_name: fullName,
-            role,
-            phone: '',
-          });
-          userRecord = res.user;
-        } catch (expressErr) {
-          console.warn('Express register fallback to Supabase:', expressErr.message);
-          const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              data: {
-                role: role,
-                full_name: fullName,
-                hotel_name: role === 'owner' ? hotelName : undefined,
-              },
-            },
-          });
-          if (error) throw error;
-          userRecord = data?.user;
+        const res = await api.post('/auth/register', {
+          email,
+          password,
+          full_name: fullName,
+          role,
+          phone: '',
+          hotel_name: role === 'owner' ? hotelName : undefined,
+        });
+
+        const userRecord = res.user;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('hotel_user', JSON.stringify(userRecord));
+          if (role === 'owner') {
+            document.cookie = 'demo_role=owner; path=/; max-age=86400';
+          }
         }
 
-        setSuccessMsg('Account created successfully! Redirecting...');
-        if (role === 'owner') {
-          document.cookie = 'demo_role=owner; path=/; max-age=86400';
-        }
+        setSuccessMsg('Account created in PostgreSQL successfully! Redirecting...');
         setTimeout(() => {
           if (onSuccess) onSuccess(userRecord);
-          router.push(redirectPath || (role === 'owner' ? '/counter-view' : '/'));
+          router.push(redirectPath || getDefaultRedirect(role));
           router.refresh();
-        }, 800);
+        }, 700);
       } else {
         // Mode === 'login'
-        let userRecord = null;
-        let userRole = role;
+        const res = await api.post('/auth/login', {
+          email,
+          password,
+        });
 
-        try {
-          // Attempt Express + PostgreSQL login
-          const res = await api.post('/auth/login', { email, password });
-          userRecord = res.user;
-          userRole = res.user?.role || role;
-        } catch (expressErr) {
-          console.warn('Express login fallback to Supabase:', expressErr.message);
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          if (error) throw error;
-          userRecord = data.user;
-          userRole =
-            data.user?.user_metadata?.role ||
-            data.user?.app_metadata?.role ||
-            (email.includes('owner') ? 'owner' : 'customer');
+        const userRecord = res.user;
+        const userRole = userRecord?.role || role;
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('hotel_user', JSON.stringify(userRecord));
+          if (userRole === 'owner') {
+            document.cookie = 'demo_role=owner; path=/; max-age=86400';
+          }
         }
 
-        if (userRole === 'owner') {
-          document.cookie = 'demo_role=owner; path=/; max-age=86400';
-        }
-
-        setSuccessMsg('Welcome back! Logging you in...');
+        setSuccessMsg(`Welcome back, ${userRecord?.full_name || email}! Logging in...`);
         setTimeout(() => {
           if (onSuccess) onSuccess(userRecord);
-          router.push(redirectPath || (userRole === 'owner' ? '/counter-view' : '/'));
+          router.push(redirectPath || getDefaultRedirect(userRole));
           router.refresh();
         }, 600);
       }
     } catch (err) {
-      console.error('Auth error:', err);
-      setErrorMsg(err.message || 'Authentication failed. Please verify your credentials.');
+      console.error('Express + PostgreSQL Auth error:', err);
+      setErrorMsg(err.message || 'Authentication failed. Please verify your credentials or server connection.');
     } finally {
       setLoading(false);
     }
-  };
-
-  // Demo Quick-Login shortcut for test evaluators
-  const handleDemoLogin = (selectedRole) => {
-    setLoading(true);
-    document.cookie = `demo_role=${selectedRole}; path=/; max-age=86400`;
-    setSuccessMsg(`Bypassing auth as Demo ${selectedRole.toUpperCase()}...`);
-    setTimeout(() => {
-      router.push(redirectPath || (selectedRole === 'owner' ? '/counter-view' : '/'));
-      router.refresh();
-    }, 600);
   };
 
   return (
@@ -162,8 +131,8 @@ export default function AuthForm({ defaultRole = 'customer', onSuccess, initialM
         </h2>
         <p className="text-xs text-zinc-400 mt-1">
           {role === 'owner'
-            ? 'Access your Counter Brochure, PMS, and live room inventory'
-            : 'Unlock instant zero-advance bookings near Dhaka airport'}
+            ? 'Access your Owner Management Panel, PMS rooms, and staff finances'
+            : 'Explore all available transit hotels with instant bookings'}
         </p>
       </div>
 
@@ -282,25 +251,35 @@ export default function AuthForm({ defaultRole = 'customer', onSuccess, initialM
         )}
       </div>
 
-      {/* Instant Demo Sandbox Shortcut */}
+      {/* Quick Testing Access */}
       <div className="mt-6 pt-5 border-t border-zinc-800 text-center">
         <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-semibold block mb-2">
-          Development / Evaluator Quick Access
+          Test Credentials (PostgreSQL Seeded)
         </span>
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => handleDemoLogin('owner')}
-            className="flex-1 py-2 px-2 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-brand-400 rounded-xl border border-brand-500/30 transition-colors"
+            onClick={() => {
+              setMode('login');
+              setRole('owner');
+              setEmail('owner@hotelkhuji.com');
+              setPassword('admin123');
+            }}
+            className="flex-1 py-1.5 px-2 text-[11px] font-semibold bg-surface-2 hover:bg-surface-3 text-brand-400 rounded-xl border border-brand-500/30 transition-colors"
           >
-            ⚡ Test as Verified Owner
+            Fill Demo Owner
           </button>
           <button
             type="button"
-            onClick={() => handleDemoLogin('customer')}
-            className="flex-1 py-2 px-2 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 rounded-xl border border-zinc-700 transition-colors"
+            onClick={() => {
+              setMode('login');
+              setRole('customer');
+              setEmail('testuser@example.com');
+              setPassword('password123');
+            }}
+            className="flex-1 py-1.5 px-2 text-[11px] font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 rounded-xl border border-zinc-700 transition-colors"
           >
-            👤 Test as Guest
+            Fill Demo Guest
           </button>
         </div>
       </div>

@@ -119,3 +119,61 @@ export const getBookingsByHotel = async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch bookings' });
   }
 };
+
+export const updateBookingStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!status) {
+    return res.status(400).json({ error: 'status is required' });
+  }
+
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    const bookingRes = await client.query(
+      'UPDATE public.bookings SET status = $1 WHERE id = $2 RETURNING *',
+      [status, id]
+    );
+
+    if (bookingRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const booking = bookingRes.rows[0];
+
+    // If booking checked out or cancelled, free up the room
+    if (status === 'checked_out' || status === 'cancelled') {
+      await client.query(
+        "UPDATE public.rooms SET current_status = 'available' WHERE id = $1",
+        [booking.room_id]
+      );
+    } else if (status === 'checked_in' || status === 'confirmed') {
+      await client.query(
+        "UPDATE public.rooms SET current_status = 'occupied' WHERE id = $1",
+        [booking.room_id]
+      );
+    }
+
+    await client.query('COMMIT');
+
+    try {
+      const io = getIO();
+      io.to(`hotel:${booking.hotel_id}`).emit('booking_updated', { booking });
+      io.to(`hotel:${booking.hotel_id}`).emit('room_status_changed', {
+        roomId: booking.room_id,
+        status: status === 'checked_out' || status === 'cancelled' ? 'available' : 'occupied',
+      });
+    } catch (e) {}
+
+    return res.status(200).json({ data: booking });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error updating booking status:', err);
+    return res.status(500).json({ error: err.message || 'Failed to update booking status' });
+  } finally {
+    client.release();
+  }
+};

@@ -16,11 +16,21 @@ export default function BookingForm({ room, hotelId, onSuccess, onCancel }) {
   const [form, setForm] = useState({
     guest_name: '',
     guest_phone: '',
-    check_in_date: new Date().toISOString().split('T')[0],
-    check_out_date: tomorrowISO(),
+    check_in_date: '',
+    check_out_date: '',
   });
 
-  const nights = calculateNights(form.check_in_date, form.check_out_date);
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      check_in_date: prev.check_in_date || new Date().toISOString().split('T')[0],
+      check_out_date: prev.check_out_date || tomorrowISO(),
+    }));
+  }, []);
+
+  const nights = form.check_in_date && form.check_out_date
+    ? calculateNights(form.check_in_date, form.check_out_date)
+    : 1;
   const totalAmount = nights * Number(room.base_price);
 
   function handleChange(e) {

@@ -19,19 +19,26 @@ export default function MarketplaceHomePage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
-  // Check current session
+  // Check current session via Express + PostgreSQL
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setCurrentUser(user);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUser(session?.user || null);
-    });
-
-    return () => subscription.unsubscribe();
+    async function checkSession() {
+      try {
+        const res = await api.get('/auth/me');
+        if (res?.user) {
+          setCurrentUser(res.user);
+          localStorage.setItem('hotel_user', JSON.stringify(res.user));
+          return;
+        }
+      } catch (err) {
+        const stored = typeof window !== 'undefined' ? localStorage.getItem('hotel_user') : null;
+        if (stored) {
+          try {
+            setCurrentUser(JSON.parse(stored));
+          } catch (e) {}
+        }
+      }
+    }
+    checkSession();
   }, []);
 
   // Fetch all active subscription hotels + rooms
@@ -108,8 +115,12 @@ export default function MarketplaceHomePage() {
   }, [hotels, searchQuery, selectedAmenity]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await api.post('/auth/logout');
+    } catch (e) {}
+    localStorage.removeItem('hotel_user');
     document.cookie = 'demo_role=; path=/; max-age=0';
+    document.cookie = 'token=; path=/; max-age=0';
     setCurrentUser(null);
   };
 
@@ -134,7 +145,6 @@ export default function MarketplaceHomePage() {
             </div>
           </Link>
 
-          {/* Right Action Menu */}
           <div className="flex items-center gap-3">
             <Link
               href="/counter-view"
@@ -146,6 +156,13 @@ export default function MarketplaceHomePage() {
 
             {currentUser ? (
               <div className="flex items-center gap-2">
+                <Link
+                  href="/hotels"
+                  className="text-xs font-bold text-white px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 shadow-md shadow-brand-600/30 transition-all flex items-center gap-1.5"
+                >
+                  <span>🏨</span>
+                  <span>Go to Hotels</span>
+                </Link>
                 <span className="text-xs text-zinc-400 hidden md:inline">
                   {currentUser.email}
                 </span>
@@ -166,6 +183,7 @@ export default function MarketplaceHomePage() {
               </button>
             )}
           </div>
+
         </div>
       </nav>
 
@@ -452,7 +470,7 @@ export default function MarketplaceHomePage() {
             <AuthForm
               defaultRole="customer"
               onSuccess={() => setShowAuthModal(false)}
-              redirectPath="/"
+              redirectPath="/hotels"
             />
           </div>
         </div>

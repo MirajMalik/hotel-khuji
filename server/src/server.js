@@ -9,6 +9,7 @@ import authRoutes from './routes/authRoutes.js';
 import hotelRoutes from './routes/hotelRoutes.js';
 import roomRoutes from './routes/roomRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
+import staffRoutes from './routes/staffRoutes.js';
 
 dotenv.config();
 
@@ -24,7 +25,7 @@ initSocket(server, CLIENT_URL);
 // Middleware
 app.use(
   cors({
-    origin: [CLIENT_URL, 'http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: [CLIENT_URL, 'http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001'],
     credentials: true,
   })
 );
@@ -41,6 +42,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/hotels', hotelRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/staff', staffRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

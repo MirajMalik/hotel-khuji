@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 function LoginContent() {
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/';
+  const redirect = searchParams.get('redirect') || '/hotels';
   const error = searchParams.get('error');
 
   return (
