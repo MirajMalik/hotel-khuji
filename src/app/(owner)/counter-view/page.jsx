@@ -67,6 +67,29 @@ export default function CounterViewPage() {
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
+  const [spotlightRoomId, setSpotlightRoomId] = useState(null);
+  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+  const [currentTime, setCurrentTime] = useState('');
+
+  // Live Dhaka local time ticker for transit guests
+  useEffect(() => {
+    const updateTime = () => {
+      try {
+        const now = new Date();
+        setCurrentTime(
+          now.toLocaleTimeString(isBn ? 'bn-BD' : 'en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+          })
+        );
+      } catch (e) {}
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, [isBn]);
 
   // Determine target hotel ID
   const hotelId =
@@ -172,6 +195,19 @@ export default function CounterViewPage() {
   // Extract unique room categories
   const roomTypes = ['all', ...new Set(availableRooms.map((r) => r.type))];
 
+  // Currently spotlighted room for Guest View
+  const spotlightRoom =
+    availableRooms.find((r) => r.id === spotlightRoomId) || availableRooms[0] || null;
+
+  const spotlightImages = spotlightRoom?.image_urls?.length
+    ? spotlightRoom.image_urls
+    : [
+        FALLBACK_ROOM_IMAGES[spotlightRoom?.type?.toLowerCase()] || FALLBACK_ROOM_IMAGES.standard,
+        'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+      ];
+
   // 1-Click Walk-In Booking handler
   const handleConfirmWalkIn = async (room, quickName = null, quickPhone = null) => {
     const finalGuestName = quickName || guestName.trim() || 'Walk-In Guest';
@@ -232,8 +268,298 @@ export default function CounterViewPage() {
         </div>
       )}
 
-      {/* Top Header & Guest Presentation Toolbar */}
-      <header className="sticky top-0 z-30 bg-surface-1/90 backdrop-blur-xl border-b border-zinc-800/80 px-6 py-4">
+      {/* Mode-Specific Display: Luxury Guest Kiosk Showcase vs Receptionist Desk */}
+      {isFullscreen ? (
+        /* ======================================================================
+           UNIQUE & EYE-CATCHING GUEST VIEW KIOSK (SHOWCASE MODE)
+           Designed for walk-in transit guests and front desk counter screen
+           ====================================================================== */
+        <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 animate-fade-in">
+          {/* Top Kiosk Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-zinc-800/80">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  ★ {isBn ? '৫-স্টার গেস্ট এক্সপেরিয়েন্স' : '5-Star Transit Experience'}
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  {isBn ? 'তাত্ক্ষণিক রুম প্রস্তুত' : 'Instant Room Ready'}
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">
+                {hotel?.name || (isBn ? 'হোটেল আশকোনা ট্রানজিট ইন' : 'Ashkona Airport Transit Inn')}
+              </h1>
+              <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-2">
+                <span>📍 {hotel?.address || (isBn ? 'হযরত শাহজালাল বিমানবন্দর টার্মিনাল সংলগ্ন' : 'Adjacent to DAC Airport Terminal')}</span>
+                <span>•</span>
+                <span className="text-amber-400 font-medium">🕒 {currentTime || 'Dhaka Local Time'}</span>
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 self-end sm:self-center">
+              {/* Language & Theme Emoji Toggles */}
+              <button
+                onClick={toggleLang}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-surface-2 hover:bg-surface-3 border border-zinc-700/80 shadow-md transition-all hover:scale-105 active:scale-95"
+                title={isBn ? 'Switch to English' : 'বাংলায় দেখুন'}
+              >
+                <span>{isBn ? '🇧🇩' : '🇬🇧'}</span>
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-surface-2 hover:bg-surface-3 border border-zinc-700/80 shadow-md transition-all hover:scale-105 active:scale-95 text-amber-300"
+                title="Toggle Theme"
+              >
+                <span>{theme === 'day' ? '☀️' : '🌙'}</span>
+              </button>
+              <button
+                onClick={() => setIsFullscreen(false)}
+                className="px-3.5 py-2 text-xs font-bold text-zinc-300 hover:text-white bg-surface-2 hover:bg-surface-3 rounded-xl border border-zinc-700/80 transition-all shadow-md flex items-center gap-1.5"
+              >
+                <span>✕</span>
+                <span>{isBn ? 'কাউন্টার ভিউ' : 'Exit Kiosk'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Perks Highlights Ribbon */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-5">
+            <div className="p-2.5 rounded-2xl bg-surface-1/80 border border-zinc-800/80 flex items-center gap-2.5 shadow-sm">
+              <span className="text-xl">🚐</span>
+              <div>
+                <p className="text-xs font-bold text-zinc-200">{isBn ? 'ফ্রি এয়ারপোর্ট শাটল' : 'Free Airport Shuttle'}</p>
+                <p className="text-[10px] text-zinc-400">{isBn ? 'প্রতি ৩০ মিনিট পর পর' : 'Every 30 Minutes'}</p>
+              </div>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-surface-1/80 border border-zinc-800/80 flex items-center gap-2.5 shadow-sm">
+              <span className="text-xl">⏰</span>
+              <div>
+                <p className="text-xs font-bold text-zinc-200">{isBn ? 'নিশ্চিত ওয়েক-আপ কল' : 'Guaranteed Wake-Up'}</p>
+                <p className="text-[10px] text-zinc-400">{isBn ? 'ফ্লাইট মিস হবার সুযোগ নেই' : 'Never Miss Your Flight'}</p>
+              </div>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-surface-1/80 border border-zinc-800/80 flex items-center gap-2.5 shadow-sm">
+              <span className="text-xl">🔇</span>
+              <div>
+                <p className="text-xs font-bold text-zinc-200">{isBn ? 'সাউন্ডপ্রুফ গ্লাস রুম' : 'Soundproof Glass'}</p>
+                <p className="text-[10px] text-zinc-400">{isBn ? 'সম্পূর্ণ শান্তিতে বিশ্রাম' : 'Peaceful Sleep & Rest'}</p>
+              </div>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-surface-1/80 border border-zinc-800/80 flex items-center gap-2.5 shadow-sm">
+              <span className="text-xl">⚡</span>
+              <div>
+                <p className="text-xs font-bold text-zinc-200">{isBn ? '১-মিনিট এক্সপ্রেস চেক-ইন' : '1-Min Express Check-in'}</p>
+                <p className="text-[10px] text-zinc-400">{isBn ? 'কোনো ফরম পূরণের ঝামেলা নেই' : 'Immediate Key Handover'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Eye-Catching Spotlight Hero Stage */}
+          {spotlightRoom ? (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5 items-stretch">
+              {/* Left Column (7 cols): Interactive Visual Gallery */}
+              <div className="lg:col-span-7 flex flex-col justify-between bg-surface-1 rounded-3xl border border-zinc-800/90 overflow-hidden shadow-2xl p-4">
+                <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-zinc-950 group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={spotlightImages[activePhotoIdx] || spotlightImages[0]}
+                    alt={spotlightRoom.type}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 cursor-pointer"
+                    onClick={() => setPreviewImage(spotlightImages[activePhotoIdx] || spotlightImages[0])}
+                  />
+
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
+
+                  {/* Badges on Hero Image */}
+                  <div className="absolute top-3 left-3 flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-amber-300 border border-amber-400/30 shadow-lg">
+                      {isBn ? `রুম নম্বর ${spotlightRoom.room_number}` : `Room #${spotlightRoom.room_number}`}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/90 text-white backdrop-blur-md shadow-lg flex items-center gap-1">
+                      <span>✓</span>
+                      <span>{isBn ? 'সরাসরি প্রস্তুত' : 'Ready Now'}</span>
+                    </span>
+                  </div>
+
+                  {/* Zoom hint */}
+                  <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md text-[10px] text-zinc-300 font-medium">
+                    🔍 {isBn ? 'ক্লিক করে বড় দেখুন' : 'Click to Expand'}
+                  </div>
+
+                  {/* Bottom Image Info */}
+                  <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between pointer-events-none">
+                    <div>
+                      <h2 className="text-xl sm:text-2xl font-black text-white capitalize drop-shadow-md">
+                        {spotlightRoom.type}
+                      </h2>
+                      <p className="text-xs text-zinc-300 drop-shadow">
+                        {isBn ? 'প্রিমিয়াম ট্রানজিট স্যুট • নিখুঁত পরিচ্ছন্নতা' : 'Premium Airport Transit Suite • Ultra Sanitized'}
+                      </p>
+                    </div>
+                    <div className="bg-brand-600/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 text-right">
+                      <p className="text-[10px] uppercase font-bold text-white/80">{isBn ? 'ফুল নাইট রেট' : 'Per Night'}</p>
+                      <p className="text-base sm:text-lg font-black text-white leading-tight">
+                        {formatCurrency(spotlightRoom.base_price)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Thumbnail Previews */}
+                <div className="grid grid-cols-4 gap-2 mt-3">
+                  {spotlightImages.slice(0, 4).map((imgUrl, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActivePhotoIdx(idx)}
+                      className={`relative aspect-[16/10] rounded-xl overflow-hidden border-2 transition-all ${
+                        activePhotoIdx === idx
+                          ? 'border-amber-400 ring-2 ring-amber-400/40 scale-102'
+                          : 'border-transparent opacity-65 hover:opacity-100'
+                      }`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={imgUrl} alt="Room Thumbnail" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Column (5 cols): Walk-In Deal & Instant Booking Showcase */}
+              <div className="lg:col-span-5 flex flex-col justify-between bg-surface-1 rounded-3xl border border-zinc-800/90 p-5 shadow-2xl">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-amber-400">
+                      ⚡ {isBn ? 'স্পেশাল ওয়াক-ইন ট্রানজিট অফার' : 'Special Walk-In Offer'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse">
+                      {isBn ? 'সীমিত রুম বাকি' : 'High Demand'}
+                    </span>
+                  </div>
+
+                  <h3 className="text-2xl font-black text-white mt-1.5">
+                    {spotlightRoom.type} {isBn ? 'স্যুট' : 'Suite'}
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    {isBn
+                      ? 'বিমানবন্দরে দীর্ঘ অপেক্ষার বদলে বিলাসবহুল বিছানায় বিশ্রাম নিন।'
+                      : 'Rest peacefully near the runway with zero stress of missing flights.'}
+                  </p>
+
+                  {/* Hourly vs Full Stay Comparison Cards */}
+                  <div className="grid grid-cols-2 gap-2.5 mt-4">
+                    <div className="p-3 rounded-2xl bg-surface-2/80 border border-brand-500/30">
+                      <span className="text-[10px] font-bold uppercase text-brand-400 block">{isBn ? 'সম্পূর্ণ রাত' : 'Full Night Stay'}</span>
+                      <p className="text-xl font-black text-white mt-0.5">{formatCurrency(spotlightRoom.base_price)}</p>
+                      <p className="text-[10px] text-zinc-400 mt-1">{isBn ? '১২:০০ টা পর্যন্ত অবস্থান' : 'Until 12:00 PM'}</p>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-surface-2/80 border border-amber-500/30">
+                      <span className="text-[10px] font-bold uppercase text-amber-400 block">{isBn ? '৬ ঘণ্টা ট্রানজিট রেস্ট' : '6-Hour Transit'}</span>
+                      <p className="text-xl font-black text-white mt-0.5">{formatCurrency(Math.round(spotlightRoom.base_price * 0.65))}</p>
+                      <p className="text-[10px] text-zinc-400 mt-1">{isBn ? 'দ্রুত গোসল ও ঘুম' : 'Shower & Nap'}</p>
+                    </div>
+                  </div>
+
+                  {/* Inclusions Checklist */}
+                  <div className="mt-4 space-y-2">
+                    <p className="text-xs font-bold text-zinc-300">{isBn ? 'রুমের সাথে সম্পূর্ণ বিনামূল্যে অন্তর্ভুক্ত:' : 'Free Package Inclusions:'}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-zinc-300">
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">✓</span>
+                        <span>{isBn ? 'সুপারফাস্ট ওয়াই-ফাই (100 Mbps)' : 'High-Speed Wi-Fi'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">✓</span>
+                        <span>{isBn ? 'গরম ও ঠান্ডা পানির শাওয়ার' : '24/7 Hot Water Shower'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">✓</span>
+                        <span>{isBn ? 'মিনারেল ওয়াটার ও ওয়েলকাম টি' : 'Mineral Water & Tea'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">✓</span>
+                        <span>{isBn ? 'লাগেজ ড্রপ ও সিকিউর লকার' : 'Luggage Storage'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Instant Check-In Big Action Button */}
+                <div className="pt-5 mt-4 border-t border-zinc-800">
+                  <button
+                    onClick={() => setActiveBookingRoom(spotlightRoom)}
+                    className="w-full py-4 px-6 rounded-2xl font-black text-base bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-xl shadow-emerald-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2.5"
+                  >
+                    <span className="text-xl">⚡</span>
+                    <span>{isBn ? 'এই রুমটি নিন — ১-ক্লিকে চেক-ইন' : 'Book This Room — Instant Check-In'}</span>
+                  </button>
+                  <p className="text-center text-[11px] text-zinc-400 mt-2">
+                    {isBn ? '🔒 রিসেপশনিস্ট সাথে সাথে রুমের চাবি হস্তান্তর করবেন' : '🔒 Front desk will immediately hand over your physical smart key'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-8 text-center bg-surface-1 rounded-3xl border border-zinc-800 my-8">
+              <p className="text-lg font-bold text-zinc-300">{isBn ? 'এই মুহূর্তে সব রুম বুকিং হয়ে গেছে' : 'All Rooms Fully Occupied'}</p>
+            </div>
+          )}
+
+          {/* Bottom Room Selector Carousel / Shelf */}
+          <div>
+            <div className="flex items-center justify-between mb-2.5">
+              <p className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+                {isBn ? 'অন্যান্য প্রস্তুত খালি রুমসমূহ (নির্বাচন করতে চাপ দিন)' : 'Explore Other Vacant Rooms (Tap to View)'}
+              </p>
+              <span className="text-xs text-amber-400 font-semibold">
+                {availableRooms.length} {isBn ? 'টি রুম প্রস্তুত' : 'Rooms Available'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {availableRooms.map((room) => {
+                const isSelected = spotlightRoom?.id === room.id;
+                const thumbImg =
+                  (room.image_urls && room.image_urls[0]) ||
+                  FALLBACK_ROOM_IMAGES[room.type?.toLowerCase()] ||
+                  FALLBACK_ROOM_IMAGES.standard;
+
+                return (
+                  <div
+                    key={room.id}
+                    onClick={() => {
+                      setSpotlightRoomId(room.id);
+                      setActivePhotoIdx(0);
+                    }}
+                    className={`p-2.5 rounded-2xl cursor-pointer transition-all border text-left ${
+                      isSelected
+                        ? 'bg-brand-600/20 border-brand-500 ring-2 ring-brand-500/40 shadow-lg'
+                        : 'bg-surface-1/90 border-zinc-800/80 hover:border-zinc-700 hover:bg-surface-2/60'
+                    }`}
+                  >
+                    <div className="aspect-[16/10] rounded-xl overflow-hidden bg-zinc-900 mb-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={thumbImg} alt={room.type} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-white">#{room.room_number}</span>
+                      <span className="text-[11px] font-bold text-amber-400">{formatCurrency(room.base_price)}</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 truncate capitalize">{room.type}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ======================================================================
+           RECEPTIONIST COUNTER DESK VIEW
+           ====================================================================== */
+        <>
+          {/* Top Header & Guest Presentation Toolbar */}
+          <header className="sticky top-0 z-30 bg-surface-1/90 backdrop-blur-xl border-b border-zinc-800/80 px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
@@ -283,13 +609,12 @@ export default function CounterViewPage() {
               <span>{isBn ? 'মার্কেটপ্লেস' : 'Marketplace'}</span>
             </Link>
             <button
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="px-3 py-2 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-colors flex items-center gap-1.5"
-              title="Toggle Guest Presentation Mode"
+              onClick={() => setIsFullscreen(true)}
+              className="px-3.5 py-2 text-xs font-bold bg-gradient-to-r from-brand-600 via-amber-500 to-brand-500 hover:from-brand-500 hover:to-amber-400 text-white rounded-xl shadow-lg shadow-brand-500/25 transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95"
+              title="Launch Eye-Catching Guest Kiosk Mode"
             >
-              {isFullscreen
-                ? (isBn ? 'পর্দা বন্ধ' : 'Exit Guest View')
-                : (isBn ? '🖥️ বড় পর্দা' : '🖥️ Presentation')}
+              <span>✨</span>
+              <span>{isBn ? 'গেস্ট ভিউ চালু করুন' : 'Launch Guest View'}</span>
             </button>
 
             {/* Quick Settings: Language & Day/Night Mode (in Emoji, at the very last) */}
@@ -477,6 +802,8 @@ export default function CounterViewPage() {
           </div>
         )}
       </main>
+    </>
+  )}
 
       {/* 1-Click Walk-In Instant Booking Modal */}
       {activeBookingRoom && (
