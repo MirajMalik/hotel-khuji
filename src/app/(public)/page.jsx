@@ -6,12 +6,14 @@ import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
 import AuthForm from '@/components/auth/AuthForm';
+import { useHotelStore } from '@/lib/store';
 
 // Curated fallback hotel imagery
 const DEFAULT_COVER_IMAGE =
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
 
 export default function MarketplaceHomePage() {
+  const { theme, toggleTheme } = useHotelStore();
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,7 +147,16 @@ export default function MarketplaceHomePage() {
             </div>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            {/* Global Day / Night Mode Button on first appearing site */}
+            <button
+              onClick={toggleTheme}
+              className="px-3.5 py-1.5 rounded-xl font-bold text-xs border border-zinc-700 bg-surface-2 hover:bg-surface-3 text-amber-300 flex items-center gap-1.5 shadow-sm transition-all"
+              title="Click to switch theme globally across all pages"
+            >
+              <span>{theme === 'day' ? '☀️ Day Mode' : '🌙 Night Mode'}</span>
+            </button>
+
             <Link
               href="/counter-view"
               className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-300 hover:text-white px-3.5 py-2 rounded-xl bg-surface-2 hover:bg-surface-3 border border-zinc-800 transition-colors"

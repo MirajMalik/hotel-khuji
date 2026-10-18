@@ -12,9 +12,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Hotel Khuji — Easy Hotel PMS",
+  title: "Hotel Khuji — Airport Transit Stays & PMS",
   description:
-    "Hyper-fast Property Management System for transit hotels. Manage rooms, walk-ins, and online bookings in one place.",
+    "Property Management System and guest booking platform for Dhaka airport transit hotels.",
   keywords: ["hotel", "PMS", "transit", "Ashkona", "airport", "booking"],
 };
 
@@ -22,9 +22,29 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-surface-0 text-zinc-50">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var theme = localStorage.getItem('hotel_theme') || 'night';
+                document.documentElement.setAttribute('data-theme', theme);
+                if (theme === 'day') {
+                  document.documentElement.classList.add('light');
+                  document.documentElement.classList.remove('dark');
+                } else {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.classList.remove('light');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-surface-0 text-zinc-50 transition-colors duration-200">
         {children}
       </body>
     </html>

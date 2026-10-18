@@ -19,10 +19,18 @@ export const useHotelStore = create((set, get) => ({
   error: null,
 
   // Theme state: 'day' (crisp, high contrast light mode) or 'night' (dark mode)
-  theme: 'day',
+  theme: 'night',
   setTheme: (theme) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('hotel_theme', theme);
+      document.documentElement.setAttribute('data-theme', theme);
+      if (theme === 'day') {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+      } else {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+      }
     }
     set({ theme });
   },
@@ -30,6 +38,14 @@ export const useHotelStore = create((set, get) => ({
     const next = get().theme === 'day' ? 'night' : 'day';
     if (typeof window !== 'undefined') {
       localStorage.setItem('hotel_theme', next);
+      document.documentElement.setAttribute('data-theme', next);
+      if (next === 'day') {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+      } else {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+      }
     }
     set({ theme: next });
   },

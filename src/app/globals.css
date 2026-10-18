@@ -14,16 +14,77 @@
   --color-brand-600: #2563eb;
   --color-brand-700: #1d4ed8;
 
-  /* Surface colors for dark UI */
-  --color-surface-0: #09090b;
-  --color-surface-1: #111113;
-  --color-surface-2: #18181b;
-  --color-surface-3: #27272a;
+  /* Surface colors dynamically responsive to theme */
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
 }
 
+/* Default: Night Mode (Dark) */
 :root {
   --background: #09090b;
   --foreground: #fafafa;
+  --surface-0: #09090b;
+  --surface-1: #111113;
+  --surface-2: #18181b;
+  --surface-3: #27272a;
+}
+
+/* Day Mode (Crisp, High-Contrast Light) */
+html[data-theme="day"],
+html.light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface-0: #f1f5f9;
+  --surface-1: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #e2e8f0;
+}
+
+html[data-theme="day"] body,
+html.light body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+html[data-theme="day"] .text-white,
+html.light .text-white {
+  color: #0f172a !important;
+}
+
+html[data-theme="day"] .text-zinc-50,
+html.light .text-zinc-50,
+html[data-theme="day"] .text-zinc-100,
+html.light .text-zinc-100 {
+  color: #1e293b !important;
+}
+
+html[data-theme="day"] .text-zinc-200,
+html.light .text-zinc-200 {
+  color: #334155 !important;
+}
+
+html[data-theme="day"] .text-zinc-300,
+html.light .text-zinc-300 {
+  color: #475569 !important;
+}
+
+html[data-theme="day"] .text-zinc-400,
+html.light .text-zinc-400 {
+  color: #64748b !important;
+}
+
+html[data-theme="day"] .border-zinc-800,
+html.light .border-zinc-800,
+html[data-theme="day"] .border-zinc-750,
+html.light .border-zinc-750 {
+  border-color: #e2e8f0 !important;
+}
+
+html[data-theme="day"] .border-zinc-700,
+html.light .border-zinc-700 {
+  border-color: #cbd5e1 !important;
 }
 
 /* ─── Base Styles ─── */
@@ -33,6 +94,7 @@ body {
   font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* ─── Scrollbar Styling ─── */
