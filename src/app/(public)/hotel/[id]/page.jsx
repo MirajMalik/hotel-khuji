@@ -551,7 +551,7 @@ function HotelBookingContent() {
             <div className="bg-surface-1 border border-surface-2 rounded-2xl p-6 shadow-xl sticky top-24 space-y-6">
               <h3 className="text-base font-bold text-white border-b border-surface-3/60 pb-3 flex items-center justify-between">
                 <span>Booking Summary</span>
-                <span className="text-xs text-brand-400 font-mono">B2C Fast-Track</span>
+                <span className="text-xs text-brand-400 font-semibold">Quick Booking</span>
               </h3>
 
               {/* Selected Room Pill */}
@@ -642,7 +642,7 @@ function HotelBookingContent() {
               </button>
 
               <p className="text-[11px] text-zinc-500 text-center">
-                Guaranteed front desk wake-up alert logged in PostgreSQL. No credit card pre-charge required.
+                Guaranteed front desk wake-up alert and shuttle timing. No credit card pre-charge required.
               </p>
             </div>
           </div>

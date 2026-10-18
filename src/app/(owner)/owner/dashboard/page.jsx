@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { formatCurrency, formatDate, todayISO } from '@/lib/utils';
+import { useHotelStore } from '@/lib/store';
 
 const DEMO_HOTEL_ID = process.env.NEXT_PUBLIC_DEMO_HOTEL_ID || 'a0000000-0000-0000-0000-000000000001';
 
@@ -79,6 +80,19 @@ function Field({ label, children }) {
 
 function OwnerDashboardContent() {
   const router = useRouter();
+  const { theme, toggleTheme, setTheme } = useHotelStore();
+  const isDay = theme === 'day';
+
+  // Hydrate saved theme on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('hotel_theme');
+      if (saved === 'day' || saved === 'night') {
+        setTheme(saved);
+      }
+    }
+  }, [setTheme]);
+
   const [currentUser, setCurrentUser] = useState(null);
   const [hotel, setHotel] = useState(null);
   const [rooms, setRooms] = useState([]);
@@ -256,7 +270,7 @@ function OwnerDashboardContent() {
           facilities: facilitiesArray,
           image_urls: imageUrlsArray,
         });
-        showToast(`Room ${res.data.room_number} added to PostgreSQL!`);
+        showToast(`Room ${res.data.room_number} saved successfully!`);
       } else {
         const res = await api.patch(`/rooms/${roomModal.room.id}`, {
           room_number: roomForm.room_number,
@@ -266,7 +280,7 @@ function OwnerDashboardContent() {
           facilities: facilitiesArray,
           image_urls: imageUrlsArray,
         });
-        showToast(`Room ${res.data.room_number} updated in PostgreSQL!`);
+        showToast(`Room ${res.data.room_number} updated successfully!`);
       }
       setRoomModal({ open: false, mode: 'create', room: null });
       fetchData();
@@ -278,7 +292,7 @@ function OwnerDashboardContent() {
   const handleDeleteRoom = async () => {
     try {
       await api.delete(`/rooms/${deleteConfirm.roomId}`);
-      showToast('Room successfully deleted from PostgreSQL');
+      showToast('Room deleted successfully');
       setDeleteConfirm({ open: false, roomId: null });
       fetchData();
     } catch (err) {
@@ -308,7 +322,7 @@ function OwnerDashboardContent() {
         phone: staffForm.phone,
         salary: parseFloat(staffForm.salary) || 0,
       });
-      showToast(`Staff member "${staffForm.name}" registered in PostgreSQL!`);
+      showToast(`Staff member "${staffForm.name}" saved successfully!`);
       setStaffModal({ open: false });
       setStaffForm({ name: '', role: 'Front Desk Receptionist', phone: '', salary: '' });
       fetchData();
@@ -331,7 +345,7 @@ function OwnerDashboardContent() {
   const handleDeleteStaff = async (id) => {
     try {
       await api.delete(`/staff/${id}`);
-      showToast('Staff member deleted from PostgreSQL');
+      showToast('Staff member deleted successfully');
       fetchData();
     } catch (err) {
       showToast(err.message || 'Failed to delete staff', 'error');
@@ -350,7 +364,7 @@ function OwnerDashboardContent() {
         expense_date: expenseForm.expense_date,
         notes: expenseForm.notes,
       });
-      showToast('Staff expense recorded in PostgreSQL!');
+      showToast('Expense recorded successfully!');
       setExpenseModal({ open: false });
       setExpenseForm({ staff_name: '', category: 'salary', amount: '', expense_date: todayISO(), notes: '' });
       fetchData();
@@ -362,7 +376,7 @@ function OwnerDashboardContent() {
   const handleDeleteExpense = async (id) => {
     try {
       await api.delete(`/staff/expenses/${id}`);
-      showToast('Expense record deleted from PostgreSQL');
+      showToast('Expense record deleted successfully');
       fetchData();
     } catch (err) {
       showToast(err.message || 'Failed to delete expense', 'error');
@@ -421,7 +435,7 @@ function OwnerDashboardContent() {
                     {hotel?.name || 'Owner Portal'}
                   </h2>
                   <span className="text-[10px] text-brand-400 uppercase tracking-wider font-bold block">
-                    Express + Postgres PMS
+                    Hotel Management
                   </span>
                 </div>
               )}
@@ -479,10 +493,10 @@ function OwnerDashboardContent() {
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white border border-zinc-700/80 transition-colors ${
               !sidebarOpen && 'justify-center px-1'
             }`}
-            title="Front Desk PMS View"
+            title="Front Desk & Wake-Up List"
           >
             <span>🏨</span>
-            {sidebarOpen && <span>Front Desk PMS</span>}
+            {sidebarOpen && <span>Front Desk & Wake-Up List</span>}
           </Link>
 
           <Link
@@ -532,17 +546,30 @@ function OwnerDashboardContent() {
               {activeTab === 'staff' && 'Hotel Staff Management'}
             </h1>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Connected to <strong>Express + PostgreSQL Backend (Port 5000)</strong>
+              Hotel Management System Active
             </p>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            {/* 2 COLOR SHIFTING BUTTON */}
+            <button
+              onClick={toggleTheme}
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs border flex items-center gap-1.5 shadow-sm transition-all ${
+                isDay
+                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-300'
+                  : 'bg-zinc-800 hover:bg-zinc-700 text-amber-300 border-zinc-700'
+              }`}
+              title="Click to switch between Day Mode and Night Mode"
+            >
+              <span>{isDay ? '☀️ Day Mode' : '🌙 Night Mode'}</span>
+            </button>
+
             <Link
               href="/dashboard"
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white rounded-xl border border-zinc-750 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white rounded-xl border border-zinc-750 transition-colors"
             >
               <span>🏨</span>
-              <span>Front Desk PMS</span>
+              <span>Front Desk & Wake-Up List</span>
             </Link>
 
             <Link
@@ -587,7 +614,7 @@ function OwnerDashboardContent() {
             <button
               onClick={fetchData}
               className="p-2 text-xs bg-surface-2 hover:bg-surface-3 text-zinc-300 rounded-xl border border-zinc-800 transition-colors"
-              title="Refresh Data from PostgreSQL"
+              title="Refresh Data"
             >
               🔄
             </button>
@@ -598,7 +625,7 @@ function OwnerDashboardContent() {
         <div className="p-6 max-w-7xl w-full mx-auto space-y-6">
           {loading && (
             <div className="p-4 rounded-2xl bg-surface-1 border border-zinc-800 text-center text-xs text-zinc-400 animate-pulse">
-              Syncing live data from Express + PostgreSQL server...
+              Loading hotel records...
             </div>
           )}
 
@@ -655,7 +682,7 @@ function OwnerDashboardContent() {
                 </div>
 
                 {bookings.length === 0 ? (
-                  <p className="text-xs text-zinc-500 py-6 text-center">No bookings recorded yet in PostgreSQL.</p>
+                  <p className="text-xs text-zinc-500 py-6 text-center">No bookings recorded yet.</p>
                 ) : (
                   <div className="divide-y divide-zinc-800/80">
                     {bookings.slice(0, 5).map((b) => (
@@ -864,7 +891,7 @@ function OwnerDashboardContent() {
                     <span className="text-3xl font-black text-white">
                       {formatCurrency(totalBookingRevenue)}
                     </span>
-                    <p className="text-xs text-zinc-500 mt-1">Aggregated from all active reservations in PostgreSQL</p>
+                    <p className="text-xs text-zinc-500 mt-1">Total calculated from active guest stays</p>
                   </div>
                 </div>
 
@@ -897,7 +924,7 @@ function OwnerDashboardContent() {
               <div className="p-6 rounded-3xl bg-surface-1 border border-zinc-800 shadow-xl space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-bold text-white">Staff Expenses Log (PostgreSQL)</h3>
+                    <h3 className="text-base font-bold text-white">Staff Expenses Log</h3>
                     <p className="text-xs text-zinc-400">
                       Track salary distributions, meal allowances, and staff advances.
                     </p>
@@ -1046,7 +1073,7 @@ function OwnerDashboardContent() {
       {/* ─── MODAL: CREATE / EDIT ROOM (MODIFY EVERYTHING) ─── */}
       {roomModal.open && (
         <Modal
-          title={roomModal.mode === 'create' ? 'Add New Room to PostgreSQL' : 'Modify Room Details'}
+          title={roomModal.mode === 'create' ? 'Add New Room' : 'Edit Room Details'}
           onClose={() => setRoomModal({ open: false, mode: 'create', room: null })}
         >
           <form onSubmit={handleSaveRoom} className="space-y-4">
@@ -1140,7 +1167,7 @@ function OwnerDashboardContent() {
       {deleteConfirm.open && (
         <Modal title="Delete Room" onClose={() => setDeleteConfirm({ open: false, roomId: null })}>
           <p className="text-sm text-zinc-300 leading-relaxed">
-            Are you sure you want to permanently delete this room from the PostgreSQL database? All future bookings and records for this room will be affected.
+            Are you sure you want to permanently delete this room? This cannot be undone.
           </p>
           <div className="flex items-center gap-3 mt-6">
             <button

@@ -52,7 +52,7 @@ export default function AuthForm({ defaultRole = 'customer', onSuccess, initialM
           }
         }
 
-        setSuccessMsg('Account created in PostgreSQL successfully! Redirecting...');
+        setSuccessMsg('Account created successfully! Redirecting...');
         setTimeout(() => {
           if (onSuccess) onSuccess(userRecord);
           router.push(redirectPath || getDefaultRedirect(role));
@@ -254,7 +254,7 @@ export default function AuthForm({ defaultRole = 'customer', onSuccess, initialM
       {/* Quick Testing Access */}
       <div className="mt-6 pt-5 border-t border-zinc-800 text-center">
         <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-semibold block mb-2">
-          Test Credentials (PostgreSQL Seeded)
+          Quick Demo Accounts
         </span>
         <div className="flex gap-2">
           <button

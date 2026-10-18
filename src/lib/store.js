@@ -18,6 +18,22 @@ export const useHotelStore = create((set, get) => ({
   notification: null,
   error: null,
 
+  // Theme state: 'day' (crisp, high contrast light mode) or 'night' (dark mode)
+  theme: 'day',
+  setTheme: (theme) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hotel_theme', theme);
+    }
+    set({ theme });
+  },
+  toggleTheme: () => {
+    const next = get().theme === 'day' ? 'night' : 'day';
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hotel_theme', next);
+    }
+    set({ theme: next });
+  },
+
   // --- STEP 3: FLIGHT DEPARTURE & WAKE-UP QUEUE STATE ---
   frontdeskQueue: [],
   isQueueLoading: false,

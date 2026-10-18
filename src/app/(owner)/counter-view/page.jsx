@@ -45,6 +45,8 @@ export default function CounterViewPage() {
   const {
     hotel,
     rooms,
+    theme,
+    toggleTheme,
     setHotel,
     setRooms,
     bookWalkIn,
@@ -252,6 +254,18 @@ export default function CounterViewPage() {
 
           {/* Presentation Toolbar Controls */}
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <button
+              onClick={toggleTheme}
+              className={`px-3 py-2 rounded-xl font-bold text-xs border flex items-center gap-1.5 transition ${
+                theme === 'day'
+                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-300'
+                  : 'bg-zinc-800 hover:bg-zinc-700 text-amber-300 border-zinc-700'
+              }`}
+              title="Switch Day / Night Mode"
+            >
+              <span>{theme === 'day' ? '☀️ Day Mode' : '🌙 Night Mode'}</span>
+            </button>
+
             <Link
               href="/owner/dashboard"
               className="px-3 py-2 text-xs font-bold text-brand-300 hover:text-white bg-surface-2 hover:bg-surface-3 rounded-xl border border-brand-500/30 transition-colors flex items-center gap-1.5"
@@ -264,7 +278,7 @@ export default function CounterViewPage() {
               className="px-3 py-2 text-xs font-semibold text-zinc-300 hover:text-white bg-surface-2 hover:bg-surface-3 rounded-xl border border-zinc-800 transition-colors flex items-center gap-1.5"
             >
               <span>🏨</span>
-              <span>Front Desk PMS</span>
+              <span>Front Desk &amp; Wake-Up List</span>
             </Link>
             <Link
               href="/hotels"

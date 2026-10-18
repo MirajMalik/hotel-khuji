@@ -126,7 +126,7 @@ export default function HotelsPage() {
                 Hotel Khuji
               </span>
               <span className="text-[10px] text-brand-400 font-semibold uppercase tracking-wider block">
-                Express + PostgreSQL Transit Network
+                Airport Transit Stay Network
               </span>
             </div>
           </Link>
@@ -177,7 +177,7 @@ export default function HotelsPage() {
         <div className="max-w-5xl mx-auto text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-semibold mb-4">
             <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
-            Live PostgreSQL Inventory • Hazrat Shahjalal International Airport (DAC)
+            Verified Transit Hotels • Hazrat Shahjalal International Airport (DAC)
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
@@ -230,7 +230,7 @@ export default function HotelsPage() {
               Available Hotels Near Airport
             </h2>
             <p className="text-xs text-zinc-400 mt-1">
-              Real-time room availability from Express + PostgreSQL
+              Real-time room availability &amp; airport shuttle
             </p>
           </div>
           <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-surface-1 border border-zinc-800 text-zinc-400">
@@ -447,7 +447,7 @@ export default function HotelsPage() {
 
       {/* Footer */}
       <footer className="border-t border-zinc-800/80 py-8 px-6 text-center text-xs text-zinc-500">
-        <p>© 2026 Hotel Khuji Platform • Powered by Express + PostgreSQL</p>
+        <p>© 2026 Hotel Khuji Platform • Airport Transit Accommodations</p>
       </footer>
     </div>
   );
