@@ -19,6 +19,14 @@ export const createBooking = async (req, res) => {
     booking_source = 'walk_in',
     totalAmount,
     total_amount = 0,
+    flightNumber,
+    flight_number,
+    flightDepartureTime,
+    flight_departure_time,
+    wakeupCallTime,
+    wakeup_call_time,
+    bookedByUserId,
+    booked_by_user_id,
   } = req.body;
 
   const targetHotelId = hotelId || hotel_id;
@@ -29,6 +37,18 @@ export const createBooking = async (req, res) => {
   const targetCheckOut = checkOutDate || check_out_date || new Date(Date.now() + 86400000).toISOString().split('T')[0];
   const targetSource = bookingSource || booking_source;
   const targetAmount = totalAmount || total_amount;
+  const targetFlightNum = flightNumber || flight_number || null;
+  const targetFlightDep = flightDepartureTime || flight_departure_time || null;
+  const targetBookedBy = bookedByUserId || booked_by_user_id || req.user?.id || null;
+  
+  // Auto-calculate wake-up call time (default: 2 hours prior to flight departure if not explicitly given)
+  let targetWakeup = wakeupCallTime || wakeup_call_time || null;
+  if (!targetWakeup && targetFlightDep) {
+    try {
+      const depDate = new Date(targetFlightDep);
+      targetWakeup = new Date(depDate.getTime() - 2 * 60 * 60 * 1000).toISOString();
+    } catch (e) {}
+  }
 
   if (!targetHotelId || !targetRoomId) {
     return res.status(400).json({ error: 'hotelId and roomId are required' });
@@ -38,30 +58,39 @@ export const createBooking = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Insert booking record
+    // 1. Insert booking record with flight synchronization fields
     const insertBookingQuery = `
       INSERT INTO public.bookings (
         hotel_id,
         room_id,
+        booked_by_user_id,
         guest_name,
         guest_phone,
         check_in_date,
         check_out_date,
+        flight_number,
+        flight_departure_time,
+        wakeup_call_time,
+        wakeup_call_completed,
         booking_source,
         total_amount,
         status
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'confirmed')
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, $11, $12, 'confirmed')
       RETURNING *;
     `;
 
     const bookingResult = await client.query(insertBookingQuery, [
       targetHotelId,
       targetRoomId,
+      targetBookedBy,
       targetGuestName,
       targetGuestPhone,
       targetCheckIn,
       targetCheckOut,
+      targetFlightNum,
+      targetFlightDep,
+      targetWakeup,
       targetSource,
       targetAmount,
     ]);

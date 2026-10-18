@@ -10,6 +10,7 @@ import hotelRoutes from './routes/hotelRoutes.js';
 import roomRoutes from './routes/roomRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import staffRoutes from './routes/staffRoutes.js';
+import frontdeskRoutes from './routes/frontdesk.js';
 
 dotenv.config();
 
@@ -39,6 +40,9 @@ app.get('/api/health', (req, res) => {
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
+app.use('/routes/auth', authRoutes); // Direct endpoint alias for routes/auth.js requirement
+app.use('/api/frontdesk', frontdeskRoutes);
+app.use('/routes/frontdesk', frontdeskRoutes); // Direct endpoint alias for routes/frontdesk.js requirement
 app.use('/api/hotels', hotelRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/bookings', bookingRoutes);

@@ -3,8 +3,11 @@ import { api } from './api';
 import { todayISO, tomorrowISO } from './utils';
 
 /**
- * Global Zustand Store for Hotel Khuji PMS & Brochure
- * Manages active hotel, room states, walk-in reservations, and live sync.
+ * Global Zustand Store for Hotel Khuji PMS, Front Desk & Flight-Sync
+ * Manages:
+ *  - Front Desk Wake-Up Call Queue & Completion State
+ *  - Active Hotel & Room States
+ *  - Walk-In & Agency Reservations
  */
 export const useHotelStore = create((set, get) => ({
   // State
@@ -15,25 +18,86 @@ export const useHotelStore = create((set, get) => ({
   notification: null,
   error: null,
 
-  // Set active hotel
-  setHotel: (hotel) => set({ hotel }),
+  // --- STEP 3: FLIGHT DEPARTURE & WAKE-UP QUEUE STATE ---
+  frontdeskQueue: [],
+  isQueueLoading: false,
+  completedWakeupCalls: {}, // { [bookingId]: true }
 
-  // Set all rooms
+  // Set active hotel & rooms
+  setHotel: (hotel) => set({ hotel }),
   setRooms: (rooms) => set({ rooms }),
 
   // Update a single room's status
   updateRoomStatus: (roomId, newStatus) =>
     set((state) => ({
       rooms: state.rooms.map((room) =>
-        room.id === roomId ? { ...room, current_status: newStatus } : room
+        room.id === roomId ? { ...room, current_status: newStatus, status: newStatus } : room
       ),
     })),
 
   // Clear toast notification
   clearNotification: () => set({ notification: null }),
 
+  // Set initial flight wake-up queue
+  setFrontdeskQueue: (queue) => {
+    // Populate initial completed map from database
+    const initialCompleted = {};
+    queue.forEach((item) => {
+      if (item.wakeup_call_completed) {
+        initialCompleted[item.id] = true;
+      }
+    });
+    set({
+      frontdeskQueue: queue,
+      completedWakeupCalls: { ...get().completedWakeupCalls, ...initialCompleted },
+    });
+  },
+
+  // Toggle or mark wake-up call completed in Zustand state & PostgreSQL backend
+  toggleWakeupCall: async (bookingId, guestName = '') => {
+    const currentStatus = Boolean(get().completedWakeupCalls[bookingId]);
+    const nextStatus = !currentStatus;
+
+    // Optimistic UI update in Zustand
+    set((state) => ({
+      completedWakeupCalls: {
+        ...state.completedWakeupCalls,
+        [bookingId]: nextStatus,
+      },
+      frontdeskQueue: state.frontdeskQueue.map((item) =>
+        item.id === bookingId ? { ...item, wakeup_call_completed: nextStatus } : item
+      ),
+      notification: {
+        type: 'success',
+        message: nextStatus
+          ? `Wake-up call marked completed for ${guestName || 'guest'}!`
+          : `Wake-up call reset to pending for ${guestName || 'guest'}.`,
+      },
+    }));
+
+    try {
+      // Sync with Express backend
+      await api.patch(`/frontdesk/wakeup-call/${bookingId}`, { completed: nextStatus });
+    } catch (err) {
+      console.warn('Failed to sync wake-up status to server, reverting:', err.message);
+      // Rollback on network error
+      set((state) => ({
+        completedWakeupCalls: {
+          ...state.completedWakeupCalls,
+          [bookingId]: currentStatus,
+        },
+        frontdeskQueue: state.frontdeskQueue.map((item) =>
+          item.id === bookingId ? { ...item, wakeup_call_completed: currentStatus } : item
+        ),
+        notification: {
+          type: 'error',
+          message: 'Failed to update wake-up status on server.',
+        },
+      }));
+    }
+  },
+
   // 1-Click "Book Walk-In" Action
-  // Updates both the Zustand store (optimistically) and Supabase
   bookWalkIn: async ({
     roomId,
     hotelId,
@@ -41,6 +105,9 @@ export const useHotelStore = create((set, get) => ({
     basePrice,
     guestName = 'Walk-In Guest',
     guestPhone = 'Front Desk Check-in',
+    flightNumber = '',
+    flightDepartureTime = null,
+    wakeupCallTime = null,
     checkInDate,
     checkOutDate,
   }) => {
@@ -52,20 +119,22 @@ export const useHotelStore = create((set, get) => ({
     const checkOut = checkOutDate || tomorrowISO();
     const totalAmount = basePrice || 0;
 
-    // 1. Optimistic Update in Zustand store: Mark room as occupied immediately
+    // Optimistic update
     set((state) => ({
       rooms: state.rooms.map((room) =>
-        room.id === roomId ? { ...room, current_status: 'occupied' } : room
+        room.id === roomId ? { ...room, current_status: 'occupied', status: 'occupied' } : room
       ),
     }));
 
     try {
-      // 2. Call Express + PostgreSQL Walk-In Booking Endpoint
       const response = await api.post('/bookings/walk-in', {
         hotelId: targetHotelId,
         roomId,
         guestName,
         guestPhone,
+        flightNumber,
+        flightDepartureTime,
+        wakeupCallTime,
         checkInDate: checkIn,
         checkOutDate: checkOut,
         bookingSource: 'walk_in',
@@ -74,13 +143,14 @@ export const useHotelStore = create((set, get) => ({
 
       const bookingData = response.data;
 
-      // 4. Update Zustand store with the confirmed booking and success toast
       const newBookingRecord = {
         id: bookingData?.id || `walkin-${Date.now()}`,
         roomId,
         roomNumber,
         guestName,
         guestPhone,
+        flightNumber,
+        flightDepartureTime,
         totalAmount,
         createdAt: new Date().toISOString(),
       };
@@ -97,8 +167,6 @@ export const useHotelStore = create((set, get) => ({
       return { success: true, booking: newBookingRecord };
     } catch (err) {
       console.error('Walk-in booking error:', err);
-
-      // Rollback optimistic update on error
       set({
         rooms: previousRooms,
         isBookingLoading: false,
@@ -113,3 +181,5 @@ export const useHotelStore = create((set, get) => ({
     }
   },
 }));
+
+export default useHotelStore;
