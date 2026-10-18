@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { useHotelStore } from '@/lib/store';
 
 const DEFAULT_COVER_IMAGE =
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
@@ -21,6 +22,9 @@ const DEFAULT_COVER_IMAGE =
  */
 export default function HotelsPage() {
   const router = useRouter();
+  const { theme, toggleTheme, lang, toggleLang } = useHotelStore();
+  const isBn = lang === 'bn';
+
   const [currentUser, setCurrentUser] = useState(null);
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -132,7 +136,7 @@ export default function HotelsPage() {
           </Link>
 
           {/* User Profile & Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {currentUser && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-zinc-300 font-medium hidden sm:inline bg-surface-2 px-3 py-1.5 rounded-xl border border-zinc-800">
@@ -142,7 +146,7 @@ export default function HotelsPage() {
                   href="/"
                   className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white border border-zinc-800 transition-colors"
                 >
-                  🏠 Home
+                  🏠 {isBn ? 'হোম' : 'Home'}
                 </Link>
                 {currentUser.role === 'owner' && (
                   <>
@@ -150,13 +154,13 @@ export default function HotelsPage() {
                       href="/owner/dashboard"
                       className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-600/30 transition-all"
                     >
-                      🏨 Owner Panel
+                      🏨 {isBn ? 'ম্যানেজার প্যানেল' : 'Owner Panel'}
                     </Link>
                     <Link
                       href="/dashboard"
                       className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white border border-zinc-800 transition-colors hidden md:inline-flex"
                     >
-                      Front Desk PMS
+                      {isBn ? 'ফ্লাইট ও ওয়েক-আপ' : 'Front Desk PMS'}
                     </Link>
                   </>
                 )}
@@ -164,10 +168,30 @@ export default function HotelsPage() {
                   onClick={handleSignOut}
                   className="text-xs font-semibold text-rose-400 hover:text-rose-300 px-3 py-1.5 rounded-xl border border-rose-950 bg-rose-950/40 hover:bg-rose-900/50 transition-colors"
                 >
-                  Sign Out
+                  {isBn ? 'সাইন আউট' : 'Sign Out'}
                 </button>
               </div>
             )}
+
+            {/* Quick Settings: Language & Day/Night Mode (in Emoji, at the very last) */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
+              <button
+                onClick={toggleLang}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-surface-2 hover:bg-surface-3 border border-zinc-700/80 shadow-sm transition-all hover:scale-105 active:scale-95"
+                title={isBn ? 'Switch to English (🇬🇧)' : 'বাংলায় দেখুন (🇧🇩)'}
+                aria-label="Toggle Language"
+              >
+                <span>{isBn ? '🇧🇩' : '🇬🇧'}</span>
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-surface-2 hover:bg-surface-3 border border-zinc-700/80 shadow-sm transition-all hover:scale-105 active:scale-95 text-amber-300"
+                title={theme === 'day' ? 'Switch to Night Mode (🌙)' : 'Switch to Day Mode (☀️)'}
+                aria-label="Toggle Theme"
+              >
+                <span>{theme === 'day' ? '☀️' : '🌙'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </nav>

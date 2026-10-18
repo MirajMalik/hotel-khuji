@@ -50,6 +50,22 @@ export const useHotelStore = create((set, get) => ({
     set({ theme: next });
   },
 
+  // Language state: 'bn' (Bangla - easy for local managers) or 'en' (English)
+  lang: 'bn',
+  setLang: (lang) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hotel_lang', lang);
+    }
+    set({ lang });
+  },
+  toggleLang: () => {
+    const next = get().lang === 'bn' ? 'en' : 'bn';
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hotel_lang', next);
+    }
+    set({ lang: next });
+  },
+
   // --- STEP 3: FLIGHT DEPARTURE & WAKE-UP QUEUE STATE ---
   frontdeskQueue: [],
   isQueueLoading: false,

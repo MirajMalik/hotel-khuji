@@ -13,7 +13,8 @@ const DEFAULT_COVER_IMAGE =
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
 
 export default function MarketplaceHomePage() {
-  const { theme, toggleTheme } = useHotelStore();
+  const { theme, toggleTheme, lang, toggleLang } = useHotelStore();
+  const isBn = lang === 'bn';
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -142,27 +143,18 @@ export default function MarketplaceHomePage() {
                 Hotel Khuji
               </span>
               <span className="text-[10px] text-brand-400 font-semibold uppercase tracking-wider block">
-                Dhaka Airport Transit Marketplace
+                {isBn ? 'ঢাকা বিমানবন্দর ট্রানজিট মার্কেটপ্লেস' : 'Dhaka Airport Transit Marketplace'}
               </span>
             </div>
           </Link>
 
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            {/* Global Day / Night Mode Button on first appearing site */}
-            <button
-              onClick={toggleTheme}
-              className="px-3.5 py-1.5 rounded-xl font-bold text-xs border border-zinc-700 bg-surface-2 hover:bg-surface-3 text-amber-300 flex items-center gap-1.5 shadow-sm transition-all"
-              title="Click to switch theme globally across all pages"
-            >
-              <span>{theme === 'day' ? '☀️ Day Mode' : '🌙 Night Mode'}</span>
-            </button>
-
             <Link
               href="/counter-view"
               className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-300 hover:text-white px-3.5 py-2 rounded-xl bg-surface-2 hover:bg-surface-3 border border-zinc-800 transition-colors"
             >
               <span>🏨</span>
-              <span>Owner Counter View</span>
+              <span>{isBn ? 'কাউন্টার ভিউ' : 'Owner Counter View'}</span>
             </Link>
 
             {currentUser ? (
@@ -172,7 +164,7 @@ export default function MarketplaceHomePage() {
                   className="text-xs font-bold text-white px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 shadow-md shadow-brand-600/30 transition-all flex items-center gap-1.5"
                 >
                   <span>🏨</span>
-                  <span>Go to Hotels</span>
+                  <span>{isBn ? 'সব হোটেল দেখুন' : 'Go to Hotels'}</span>
                 </Link>
                 <span className="text-xs text-zinc-400 hidden md:inline">
                   {currentUser.email}
@@ -181,7 +173,7 @@ export default function MarketplaceHomePage() {
                   onClick={handleSignOut}
                   className="text-xs font-semibold text-rose-400 hover:text-rose-300 px-3 py-1.5 rounded-lg border border-rose-950 bg-rose-950/30 transition-colors"
                 >
-                  Sign Out
+                  {isBn ? 'সাইন আউট' : 'Sign Out'}
                 </button>
               </div>
             ) : (
@@ -190,9 +182,29 @@ export default function MarketplaceHomePage() {
                 className="text-xs font-bold text-white px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 shadow-md shadow-brand-600/30 transition-all flex items-center gap-1.5"
               >
                 <span>👤</span>
-                <span>Sign In / Register</span>
+                <span>{isBn ? 'লগইন / যোগ দিন' : 'Sign In / Register'}</span>
               </button>
             )}
+
+            {/* Quick Settings: Language & Day/Night Mode (in Emoji, at the very last) */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
+              <button
+                onClick={toggleLang}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-surface-2 hover:bg-surface-3 border border-zinc-700/80 shadow-sm transition-all hover:scale-105 active:scale-95"
+                title={isBn ? 'Switch to English (🇬🇧)' : 'বাংলায় দেখুন (🇧🇩)'}
+                aria-label="Toggle Language"
+              >
+                <span>{isBn ? '🇧🇩' : '🇬🇧'}</span>
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-surface-2 hover:bg-surface-3 border border-zinc-700/80 shadow-sm transition-all hover:scale-105 active:scale-95 text-amber-300"
+                title={theme === 'day' ? 'Switch to Night Mode (🌙)' : 'Switch to Day Mode (☀️)'}
+                aria-label="Toggle Theme"
+              >
+                <span>{theme === 'day' ? '☀️' : '🌙'}</span>
+              </button>
+            </div>
           </div>
 
         </div>

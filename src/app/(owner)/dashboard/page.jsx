@@ -9,8 +9,9 @@ import { useHotelStore } from '@/lib/store';
  * B2B FRONT DESK DASHBOARD COMPONENT
  * Route: /app/(owner)/dashboard/page.jsx
  * 
- * Restored to original sleek dark dashboard styling:
- * - Live "Flight Departure & Wake-Up Queue"
+ * Features:
+ * - Full Bangla (বাংলা) & English support for elderly/local managers
+ * - Original sleek dark dashboard styling preserved
  * - Red urgent warning cards (< 4 hours) with animated pulse
  * - Emerald green cards for later flights
  * - Clean human-friendly text (no database/server jargon)
@@ -21,6 +22,8 @@ function FrontDeskActionQueue() {
   const {
     theme,
     toggleTheme,
+    lang,
+    toggleLang,
     frontdeskQueue,
     setFrontdeskQueue,
     completedWakeupCalls,
@@ -33,6 +36,8 @@ function FrontDeskActionQueue() {
   const [error, setError] = useState(null);
   const [filterMode, setFilterMode] = useState('all'); // 'all' | 'urgent' | 'pending' | 'completed'
 
+  const isBn = lang === 'bn';
+
   // Fetch flight action list from backend
   const fetchActionList = useCallback(async () => {
     setLoading(true);
@@ -44,11 +49,11 @@ function FrontDeskActionQueue() {
       }
     } catch (err) {
       console.error('Failed to load action list:', err);
-      setError('Unable to load flight queue. Please check your connection.');
+      setError(isBn ? 'তালিকা লোড করা যায়নি। ইন্টারনেট সংযোগ চেক করুন।' : 'Unable to load flight queue. Please check your connection.');
     } finally {
       setLoading(false);
     }
-  }, [setFrontdeskQueue]);
+  }, [setFrontdeskQueue, isBn]);
 
   useEffect(() => {
     fetchActionList();
@@ -59,9 +64,15 @@ function FrontDeskActionQueue() {
     return () => clearInterval(timer);
   }, [fetchActionList]);
 
-  // Format departure relative badge
+  // Format departure relative badge in Bangla/English
   const getDepartureInfo = (departureTimeStr) => {
-    if (!departureTimeStr) return { label: 'No flight attached', isUrgent: false, diffHours: null };
+    if (!departureTimeStr) {
+      return { 
+        label: isBn ? 'ফ্লাইটের সময় দেওয়া হয়নি' : 'No flight attached', 
+        isUrgent: false, 
+        diffHours: null 
+      };
+    }
     const now = new Date();
     const depTime = new Date(departureTimeStr);
     const diffMs = depTime.getTime() - now.getTime();
@@ -69,17 +80,25 @@ function FrontDeskActionQueue() {
     const diffHours = (diffMins / 60).toFixed(1);
 
     if (diffMins < 0) {
-      return { label: `Departed (${Math.abs(diffMins)}m ago)`, isUrgent: false, diffHours };
+      return { 
+        label: isBn ? `ফ্লাইট চলে গেছে (${Math.abs(diffMins)} মি. আগে)` : `Departed (${Math.abs(diffMins)}m ago)`, 
+        isUrgent: false, 
+        diffHours 
+      };
     }
     if (diffMins <= 240) { // within 4 hours
+      const h = Math.floor(diffMins / 60);
+      const m = diffMins % 60;
       return { 
-        label: `Departs in ${Math.floor(diffMins / 60)}h ${diffMins % 60}m (URGENT)`, 
+        label: isBn 
+          ? `ফ্লাইট বাকি ${h > 0 ? `${h} ঘণ্টা ` : ''}${m} মিনিট (জরুরি)` 
+          : `Departs in ${h}h ${m}m (URGENT)`, 
         isUrgent: true, 
         diffHours 
       };
     }
     return { 
-      label: `Departs in ${diffHours} hrs`, 
+      label: isBn ? `ফ্লাইট বাকি ${diffHours} ঘণ্টা` : `Departs in ${diffHours} hrs`, 
       isUrgent: false, 
       diffHours 
     };
@@ -120,48 +139,64 @@ function FrontDeskActionQueue() {
       {/* Navigation Header */}
       <header className="sticky top-0 z-40 bg-surface-1/90 backdrop-blur-xl border-b border-zinc-800/80 px-4 sm:px-8 py-3.5">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Link
               href="/owner/dashboard"
               className="px-3 py-1.5 rounded-xl bg-surface-2 hover:bg-surface-3 text-xs font-bold text-zinc-300 hover:text-white border border-zinc-700 transition-colors"
             >
-              ← Owner Panel
+              ← {isBn ? 'ম্যানেজার প্যানেল' : 'Owner Panel'}
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-black text-white">Flight Departure &amp; Wake-Up Queue</span>
+                <span className="text-base font-black text-white">
+                  {isBn ? '✈️ এয়ারপোর্ট ওয়েক-আপ ও ফ্লাইট লিস্ট' : 'Flight Departure & Wake-Up Queue'}
+                </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-500/10 text-brand-400 border border-brand-500/20">
-                  Front Desk
+                  {isBn ? 'ফ্রন্ট ডেস্ক' : 'Front Desk'}
                 </span>
               </div>
               <p className="text-[11px] text-zinc-400">
-                Airport Flight Departure Synchronization
+                {isBn 
+                  ? 'আগে যাদের ফ্লাইট, তাদের তালিকা সবার উপরে দেখাবে' 
+                  : 'Guests ordered by earliest flight departure time'
+                }
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            {/* Global Day / Night Mode Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="px-3 py-1.5 rounded-xl font-bold text-xs border border-zinc-700 bg-surface-2 hover:bg-surface-3 text-amber-300 flex items-center gap-1.5 shadow-sm transition-all"
-              title="Click to switch Day / Night mode across all pages"
-            >
-              <span>{theme === 'day' ? '☀️ Day Mode' : '🌙 Night Mode'}</span>
-            </button>
-
             <button
               onClick={fetchActionList}
               className="px-3 py-1.5 rounded-xl bg-surface-2 hover:bg-surface-3 text-xs font-semibold text-zinc-300 border border-zinc-700 flex items-center gap-1.5 transition-colors"
             >
-              <span>🔄</span> Refresh Queue
+              <span>🔄</span> {isBn ? 'রিফ্রেশ' : 'Refresh Queue'}
             </button>
             <Link
               href="/hotels"
               className="px-3 py-1.5 rounded-xl bg-surface-2 hover:bg-surface-3 text-xs font-semibold text-zinc-300 border border-zinc-700 transition-colors"
             >
-              Marketplace
+              {isBn ? 'মার্কেটপ্লেস' : 'Marketplace'}
             </Link>
+
+            {/* Quick Settings: Language & Day/Night Mode (in Emoji, at the very last) */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
+              <button
+                onClick={toggleLang}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-surface-2 hover:bg-surface-3 border border-zinc-700/80 shadow-sm transition-all hover:scale-105 active:scale-95"
+                title={isBn ? 'Switch to English (🇬🇧)' : 'বাংলায় দেখুন (🇧🇩)'}
+                aria-label="Toggle Language"
+              >
+                <span>{isBn ? '🇧🇩' : '🇬🇧'}</span>
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-surface-2 hover:bg-surface-3 border border-zinc-700/80 shadow-sm transition-all hover:scale-105 active:scale-95 text-amber-300"
+                title={theme === 'day' ? 'Switch to Night Mode (🌙)' : 'Switch to Day Mode (☀️)'}
+                aria-label="Toggle Theme"
+              >
+                <span>{theme === 'day' ? '☀️' : '🌙'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -175,10 +210,16 @@ function FrontDeskActionQueue() {
               <span className="text-2xl animate-pulse">🚨</span>
               <div>
                 <h3 className="text-sm font-black text-white">
-                  {urgentCount} Guest{urgentCount > 1 ? 's' : ''} Departing Within 4 Hours!
+                  {isBn 
+                    ? `জরুরি নোটিশ: ${urgentCount} জন গেস্টের ফ্লাইট আগামী ৪ ঘণ্টার মধ্যে!` 
+                    : `${urgentCount} Guest${urgentCount > 1 ? 's' : ''} Departing Within 4 Hours!`
+                  }
                 </h3>
                 <p className="text-xs text-rose-200/80 mt-0.5">
-                  Execute wake-up calls immediately and ready the airport transit shuttle van.
+                  {isBn
+                    ? 'গেস্টকে এখনই ফোন করে ঘুম থেকে জাগান এবং এয়ারপোর্ট শাটল গাড়ি প্রস্তুত রাখুন।'
+                    : 'Execute wake-up calls immediately and ready the airport transit shuttle van.'
+                  }
                 </p>
               </div>
             </div>
@@ -186,7 +227,7 @@ function FrontDeskActionQueue() {
               onClick={() => setFilterMode('urgent')}
               className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white shadow-md transition-all"
             >
-              View Urgent Queue
+              {isBn ? 'জরুরি তালিকা দেখুন' : 'View Urgent Queue'}
             </button>
           </div>
         )}
@@ -195,10 +236,10 @@ function FrontDeskActionQueue() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2 bg-surface-1 p-1 rounded-2xl border border-zinc-800">
             {[
-              { id: 'all', label: `All Flights (${frontdeskQueue.length})` },
-              { id: 'urgent', label: `Urgent (< 4h) (${urgentCount})` },
-              { id: 'pending', label: 'Wake-Up Pending' },
-              { id: 'completed', label: 'Completed' },
+              { id: 'all', label: isBn ? `সব ফ্লাইট (${frontdeskQueue.length})` : `All Flights (${frontdeskQueue.length})` },
+              { id: 'urgent', label: isBn ? `🚨 জরুরি (< ৪ ঘণ্টা) (${urgentCount})` : `Urgent (< 4h) (${urgentCount})` },
+              { id: 'pending', label: isBn ? '⏳ ওয়েক-আপ বাকি' : 'Wake-Up Pending' },
+              { id: 'completed', label: isBn ? '✓ কল সম্পন্ন' : 'Completed' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -215,7 +256,7 @@ function FrontDeskActionQueue() {
           </div>
 
           <span className="text-xs text-zinc-500">
-            Earliest flights shown first
+            {isBn ? 'আগে যাদের ফ্লাইট, তারা উপরে' : 'Earliest flights shown first'}
           </span>
         </div>
 
@@ -238,15 +279,20 @@ function FrontDeskActionQueue() {
               onClick={fetchActionList}
               className="mt-3 px-4 py-2 bg-rose-600 text-white rounded-xl font-bold"
             >
-              Retry
+              {isBn ? 'আবার চেষ্টা করুন' : 'Retry'}
             </button>
           </div>
         ) : filteredQueue.length === 0 ? (
           <div className="p-16 text-center bg-surface-1 border border-zinc-800 rounded-3xl">
             <span className="text-4xl block mb-2">✈️</span>
-            <h3 className="text-base font-bold text-white">No Flights in this Queue</h3>
+            <h3 className="text-base font-bold text-white">
+              {isBn ? 'এই তালিকায় কোনো ফ্লাইট নেই' : 'No Flights in this Queue'}
+            </h3>
             <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
-              All flight departures for this filter have been handled or no flight numbers were logged today.
+              {isBn 
+                ? 'বর্তমান ফিল্টারের সব ফ্লাইট পরিচালনা করা হয়েছে অথবা আজকে কোনো ফ্লাইট নেই।' 
+                : 'All flight departures for this filter have been handled or no flight numbers were logged today.'
+              }
             </p>
           </div>
         ) : (
@@ -274,11 +320,11 @@ function FrontDeskActionQueue() {
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2">
                         <span className="px-3 py-1 rounded-xl bg-surface-2 border border-zinc-700 text-xs font-black text-white">
-                          Room {item.room_number}
+                          {isBn ? `রুম ${item.room_number}` : `Room ${item.room_number}`}
                         </span>
                         {item.booked_by_role === 'agency' && (
                           <span className="px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold">
-                            Agency Bulk
+                            {isBn ? 'ট্রাভেল এজেন্সি বুকিং' : 'Agency Bulk'}
                           </span>
                         )}
                       </div>
@@ -293,7 +339,14 @@ function FrontDeskActionQueue() {
                             : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                         }`}
                       >
-                        <span>{isUrgentCard ? '⚡ Urgent' : '🟢 Scheduled'}</span>
+                        <span>
+                          {isCallDone 
+                            ? (isBn ? '✓ সম্পন্ন' : '✓ Completed') 
+                            : isUrgentCard 
+                            ? (isBn ? '⚡ জরুরি' : '⚡ Urgent') 
+                            : (isBn ? '🟢 নির্ধারিত' : '🟢 Scheduled')
+                          }
+                        </span>
                       </span>
                     </div>
 
@@ -301,27 +354,36 @@ function FrontDeskActionQueue() {
                     <h3 className="text-lg font-black text-white tracking-tight flex items-center justify-between">
                       <span>{item.guest_name}</span>
                       <span className="text-xs font-extrabold text-brand-400">
-                        {item.flight_number ? `✈️ ${item.flight_number}` : 'No Flight #'}
+                        {item.flight_number ? `✈️ ${item.flight_number}` : (isBn ? 'ফ্লাইট নম্বর নেই' : 'No Flight #')}
                       </span>
                     </h3>
-                    <p className="text-xs text-zinc-400 mt-0.5">📞 {item.guest_phone}</p>
+
+                    {/* Direct Tap-to-Call Link for Managers */}
+                    <a
+                      href={`tel:${item.guest_phone}`}
+                      className="text-xs text-zinc-300 hover:text-white mt-1 inline-flex items-center gap-1.5 font-bold underline"
+                      title={isBn ? 'গেস্টের নম্বরে সরাসরি ফোন করুন' : 'Tap to call guest phone'}
+                    >
+                      <span>📞 {isBn ? 'ফোন:' : 'Call:'}</span>
+                      <span>{item.guest_phone}</span>
+                    </a>
 
                     {/* Flight & Wakeup Time Grid */}
                     <div className="mt-4 p-3.5 rounded-2xl bg-surface-2/70 border border-zinc-800/80 space-y-2 text-xs">
                       <div className="flex items-center justify-between">
-                        <span className="text-zinc-400">Departure Time:</span>
+                        <span className="text-zinc-400">{isBn ? 'ফ্লাইট ছাড়ার সময়:' : 'Departure Time:'}</span>
                         <strong className="text-white">
                           {item.flight_departure_time
                             ? new Date(item.flight_departure_time).toLocaleTimeString([], {
                                 hour: '2-digit',
                                 minute: '2-digit',
                               })
-                            : 'Not set'}
+                            : (isBn ? 'দেওয়া হয়নি' : 'Not set')}
                         </strong>
                       </div>
 
                       <div className="flex items-center justify-between">
-                        <span className="text-zinc-400">Countdown:</span>
+                        <span className="text-zinc-400">{isBn ? 'অবস্থা / বাকি সময়:' : 'Countdown:'}</span>
                         <span
                           className={`font-bold ${
                             isUrgentCard ? 'text-rose-400 font-black' : 'text-emerald-400'
@@ -332,14 +394,14 @@ function FrontDeskActionQueue() {
                       </div>
 
                       <div className="flex items-center justify-between pt-1 border-t border-zinc-800">
-                        <span className="text-zinc-400">Wake-Up Call Time:</span>
+                        <span className="text-zinc-400">{isBn ? 'ঘুম ভাঙানোর কল:' : 'Wake-Up Call Time:'}</span>
                         <strong className="text-amber-400">
                           {item.wakeup_call_time
                             ? new Date(item.wakeup_call_time).toLocaleTimeString([], {
                                 hour: '2-digit',
                                 minute: '2-digit',
                               })
-                            : 'Auto (2h prior)'}
+                            : (isBn ? 'ফ্লাইটের ২ ঘণ্টা আগে' : 'Auto (2h prior)')}
                         </strong>
                       </div>
                     </div>
@@ -350,7 +412,7 @@ function FrontDeskActionQueue() {
                     <button
                       type="button"
                       onClick={() => toggleWakeupCall(item.id, item.guest_name)}
-                      className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${
+                      className={`w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg ${
                         isCallDone
                           ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700'
                           : isUrgentCard
@@ -358,7 +420,13 @@ function FrontDeskActionQueue() {
                           : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
                       }`}
                     >
-                      <span>{isCallDone ? '✓ Wake-Up Completed' : '📞 Call Guest & Mark Wake-Up Done'}</span>
+                      {isCallDone ? (
+                        <span>✓ {isBn ? 'কল করা সম্পন্ন (বাতিল করতে চাপুন)' : 'Wake-Up Completed (Tap to undo)'}</span>
+                      ) : isUrgentCard ? (
+                        <span>📞 {isBn ? 'গেস্টকে ফোন করুন (ঘুম থেকে জাগান)' : 'CALL GUEST NOW & WAKE UP'}</span>
+                      ) : (
+                        <span>📞 {isBn ? 'ফোন করুন ও ওয়েক-আপ নিশ্চিত করুন' : 'Call Guest & Mark Wake-Up Done'}</span>
+                      )}
                     </button>
                   </div>
                 </div>

@@ -47,6 +47,8 @@ export default function CounterViewPage() {
     rooms,
     theme,
     toggleTheme,
+    lang,
+    toggleLang,
     setHotel,
     setRooms,
     bookWalkIn,
@@ -54,6 +56,9 @@ export default function CounterViewPage() {
     notification,
     clearNotification,
   } = useHotelStore();
+
+  const isBn = lang === 'bn';
+  const isDay = theme === 'day';
 
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState('all');
@@ -233,67 +238,79 @@ export default function CounterViewPage() {
           <div>
             <div className="flex items-center gap-3">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-500/20 text-brand-400 border border-brand-500/30">
-                Receptionist Counter View
+                {isBn ? 'রিসেপশন কাউন্টার ভিউ' : 'Receptionist Counter View'}
               </span>
               <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Live Walk-In Display
+                {isBn ? 'সরাসরি খালি রুমের তালিকা' : 'Live Walk-In Display'}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-50 tracking-tight mt-1">
-              {hotel?.name || 'Ashkona Airport Transit Inn'}
+              {hotel?.name || (isBn ? 'হোটেল আশকোনা ট্রানজিট' : 'Ashkona Airport Transit Inn')}
             </h1>
             <p className="text-xs sm:text-sm text-zinc-400 mt-0.5 flex items-center gap-2">
-              <span>📍 {hotel?.address || 'Ashkona, Uttara, Dhaka'}</span>
+              <span>📍 {hotel?.address || (isBn ? 'আশকোনা, উত্তরা, ঢাকা' : 'Ashkona, Uttara, Dhaka')}</span>
               <span>•</span>
               <span className="text-emerald-400 font-semibold">
-                {availableRooms.length} Rooms Ready for Immediate Check-In
+                {isBn
+                  ? `${availableRooms.length}টি রুম এখন খালি আছে (সরাসরি বুকিং)`
+                  : `${availableRooms.length} Rooms Ready for Immediate Check-In`}
               </span>
             </p>
           </div>
 
           {/* Presentation Toolbar Controls */}
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <button
-              onClick={toggleTheme}
-              className={`px-3 py-2 rounded-xl font-bold text-xs border flex items-center gap-1.5 transition ${
-                theme === 'day'
-                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-300'
-                  : 'bg-zinc-800 hover:bg-zinc-700 text-amber-300 border-zinc-700'
-              }`}
-              title="Switch Day / Night Mode"
-            >
-              <span>{theme === 'day' ? '☀️ Day Mode' : '🌙 Night Mode'}</span>
-            </button>
-
             <Link
               href="/owner/dashboard"
               className="px-3 py-2 text-xs font-bold text-brand-300 hover:text-white bg-surface-2 hover:bg-surface-3 rounded-xl border border-brand-500/30 transition-colors flex items-center gap-1.5"
             >
               <span>←</span>
-              <span>Owner Panel</span>
+              <span>{isBn ? 'মালিকের ড্যাশবোর্ড' : 'Owner Panel'}</span>
             </Link>
             <Link
               href="/dashboard"
               className="px-3 py-2 text-xs font-semibold text-zinc-300 hover:text-white bg-surface-2 hover:bg-surface-3 rounded-xl border border-zinc-800 transition-colors flex items-center gap-1.5"
             >
               <span>🏨</span>
-              <span>Front Desk &amp; Wake-Up List</span>
+              <span>{isBn ? 'ফ্লাইট ও ওয়েক-আপ' : 'Front Desk & Wake-Up List'}</span>
             </Link>
             <Link
               href="/hotels"
               className="px-3 py-2 text-xs font-semibold text-zinc-300 hover:text-white bg-surface-2 hover:bg-surface-3 rounded-xl border border-zinc-800 transition-colors flex items-center gap-1.5"
             >
               <span>🌐</span>
-              <span>Marketplace</span>
+              <span>{isBn ? 'মার্কেটপ্লেস' : 'Marketplace'}</span>
             </Link>
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               className="px-3 py-2 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-colors flex items-center gap-1.5"
               title="Toggle Guest Presentation Mode"
             >
-              {isFullscreen ? 'Exit Guest View' : '🖥️ Presentation'}
+              {isFullscreen
+                ? (isBn ? 'পর্দা বন্ধ' : 'Exit Guest View')
+                : (isBn ? '🖥️ বড় পর্দা' : '🖥️ Presentation')}
             </button>
+
+            {/* Quick Settings: Language & Day/Night Mode (in Emoji, at the very last) */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
+              <button
+                onClick={toggleLang}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-surface-2 hover:bg-surface-3 border border-zinc-700/80 shadow-sm transition-all hover:scale-105 active:scale-95"
+                title={isBn ? 'Switch to English (🇬🇧)' : 'বাংলায় দেখুন (🇧🇩)'}
+                aria-label="Toggle Language"
+              >
+                <span>{isBn ? '🇧🇩' : '🇬🇧'}</span>
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-surface-2 hover:bg-surface-3 border border-zinc-700/80 shadow-sm transition-all hover:scale-105 active:scale-95 text-amber-300"
+                title={theme === 'day' ? 'Switch to Night Mode (🌙)' : 'Switch to Day Mode (☀️)'}
+                aria-label="Toggle Theme"
+              >
+                <span>{theme === 'day' ? '☀️' : '🌙'}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -317,7 +334,7 @@ export default function CounterViewPage() {
                     : 'bg-surface-2 text-zinc-400 border border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
                 }`}
               >
-                {type === 'all' ? 'All Available' : type} ({count})
+                {type === 'all' ? (isBn ? 'সব খালি রুম' : 'All Available') : type} ({count})
               </button>
             );
           })}
@@ -379,12 +396,12 @@ export default function CounterViewPage() {
 
                     {/* Top Badges */}
                     <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-                      <span className="px-3 py-1 bg-surface-0/90 backdrop-blur-md text-zinc-100 text-xs font-extrabold rounded-xl border border-zinc-700/80 shadow-md">
-                        Room {room.room_number}
+                      <span className="px-3 py-1 bg-surface-0/90 backdrop-blur-md text-zinc-100 text-xs font-extrabold rounded-xl border border-zinc-750 shadow-md">
+                        {isBn ? `রুম ${room.room_number}` : `Room ${room.room_number}`}
                       </span>
                       <span className="px-2.5 py-1 bg-emerald-500/90 text-white text-[11px] font-bold rounded-xl shadow-md flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                        Available Now
+                        {isBn ? 'এখনই প্রস্তুত' : 'Available Now'}
                       </span>
                     </div>
 
@@ -403,18 +420,20 @@ export default function CounterViewPage() {
                       <div className="flex items-baseline justify-between mb-4 pb-4 border-b border-zinc-800/80">
                         <div>
                           <span className="text-xs text-zinc-400 font-medium block">
-                            Nightly Transit Rate
+                            {isBn ? '১ রাতের ভাড়া' : 'Nightly Transit Rate'}
                           </span>
                           <div className="flex items-baseline gap-1 mt-0.5">
                             <span className="text-2xl font-black text-white tracking-tight">
                               {formatCurrency(room.base_price)}
                             </span>
-                            <span className="text-xs text-zinc-500 font-medium">/ night</span>
+                            <span className="text-xs text-zinc-500 font-medium">{isBn ? '/ রাত' : '/ night'}</span>
                           </div>
                         </div>
 
                         <div className="text-right">
-                          <span className="text-[11px] text-zinc-500 block">Short Transit (6h)</span>
+                          <span className="text-[11px] text-zinc-500 block">
+                            {isBn ? 'অল্প সময় (৬ ঘণ্টা)' : 'Short Transit (6h)'}
+                          </span>
                           <span className="text-sm font-bold text-emerald-400">
                             {formatCurrency(Math.round(room.base_price * 0.6))}
                           </span>
@@ -424,7 +443,7 @@ export default function CounterViewPage() {
                       {/* Room Facilities Pills */}
                       <div className="mb-6">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block mb-2.5">
-                          Room Facilities & Comforts
+                          {isBn ? 'রুমের সুবিধাসমূহ' : 'Room Facilities & Comforts'}
                         </span>
                         <div className="flex flex-wrap gap-1.5">
                           {facilities.map((fac, idx) => (
@@ -448,7 +467,7 @@ export default function CounterViewPage() {
                         className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white shadow-lg shadow-brand-500/20 active:scale-[0.99] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                       >
                         <span>⚡</span>
-                        <span>Book Walk-In Now</span>
+                        <span>{isBn ? 'সরাসরি গেস্ট ওঠান (চেক-ইন)' : 'Book Walk-In Now'}</span>
                       </button>
                     </div>
                   </div>
@@ -466,10 +485,10 @@ export default function CounterViewPage() {
             <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-brand-400">
-                  Instant Walk-In Check-In
+                  {isBn ? 'দ্রুত গেস্ট চেক-ইন (সরাসরি চাবি দিন)' : 'Instant Walk-In Check-In'}
                 </span>
                 <h3 className="text-xl font-black text-white mt-0.5">
-                  Room {activeBookingRoom.room_number} — {activeBookingRoom.type}
+                  {isBn ? `রুম ${activeBookingRoom.room_number}` : `Room ${activeBookingRoom.room_number}`} — {activeBookingRoom.type}
                 </h3>
               </div>
               <button
@@ -483,23 +502,23 @@ export default function CounterViewPage() {
             <div className="py-5 space-y-4">
               <div className="p-3.5 rounded-2xl bg-surface-2/70 border border-zinc-800/80 flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-zinc-400 block">Total Amount Due</span>
+                  <span className="text-xs text-zinc-400 block">{isBn ? 'মোট ভাড়া' : 'Total Amount Due'}</span>
                   <span className="text-xl font-black text-white">
                     {formatCurrency(activeBookingRoom.base_price)}
                   </span>
                 </div>
                 <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  Instant Key Issue
+                  {isBn ? 'চাবি বুঝিয়ে দিন' : 'Instant Key Issue'}
                 </span>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
-                  Guest Full Name (Optional)
+                  {isBn ? 'গেস্টের পুরো নাম (প্রয়োজন না হলে খালি রাখুন)' : 'Guest Full Name (Optional)'}
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Tanvir Ahmed (or leave blank for Walk-in)"
+                  placeholder={isBn ? 'যেমন: তানভীর আহমেদ' : 'e.g. Tanvir Ahmed (or leave blank for Walk-in)'}
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-surface-2 border border-zinc-700/80 text-white placeholder-zinc-500 text-sm focus:border-brand-500 focus:outline-none"
@@ -508,7 +527,7 @@ export default function CounterViewPage() {
 
               <div>
                 <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
-                  Guest Contact / Phone (Optional)
+                  {isBn ? 'গেস্টের মোবাইল নম্বর' : 'Guest Contact / Phone (Optional)'}
                 </label>
                 <input
                   type="text"
@@ -523,11 +542,11 @@ export default function CounterViewPage() {
             <div className="flex items-center gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => handleConfirmWalkIn(activeBookingRoom, 'Express Walk-In Guest', 'Counter')}
+                onClick={() => handleConfirmWalkIn(activeBookingRoom, isBn ? 'কাউন্টার সরাসরি গেস্ট' : 'Express Walk-In Guest', 'Counter')}
                 disabled={isBookingLoading}
                 className="flex-1 py-3 px-3 text-xs font-bold text-zinc-300 hover:text-white bg-surface-2 hover:bg-surface-3 rounded-xl border border-zinc-700 transition-colors"
               >
-                1-Click Express Check-In
+                {isBn ? '⚡ ১-ক্লিকে দ্রুত চেক-ইন' : '1-Click Express Check-In'}
               </button>
               <button
                 type="button"
@@ -541,7 +560,7 @@ export default function CounterViewPage() {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 ) : (
-                  'Confirm & Assign Key'
+                  isBn ? '✓ নিশ্চিত করুন ও চাবি দিন' : 'Confirm & Assign Key'
                 )}
               </button>
             </div>

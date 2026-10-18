@@ -31,7 +31,7 @@ function StatCard({ label, value, icon, color = 'brand' }) {
 }
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
-function StatusBadge({ status }) {
+function StatusBadge({ status, isBn = false }) {
   const map = {
     available: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
     occupied: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
@@ -42,9 +42,20 @@ function StatusBadge({ status }) {
     cancelled: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
     pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
   };
+  const bnLabel = {
+    available: 'খালি আছে',
+    occupied: 'ভাড়া দেওয়া',
+    maintenance: 'মেরামত/পরিষ্কার',
+    confirmed: 'কনফার্মড',
+    checked_in: 'চেক-ইন',
+    checked_out: 'চেক-আউট',
+    cancelled: 'বাতিল',
+    pending: 'অপেক্ষমাণ',
+  };
+  const text = isBn ? (bnLabel[status] || status) : status?.replace('_', ' ');
   return (
     <span className={`inline-block px-2.5 py-0.5 rounded-lg text-[11px] font-bold border ${map[status] || map.pending}`}>
-      {status?.replace('_', ' ')}
+      {text}
     </span>
   );
 }
@@ -80,8 +91,9 @@ function Field({ label, children }) {
 
 function OwnerDashboardContent() {
   const router = useRouter();
-  const { theme, toggleTheme, setTheme } = useHotelStore();
+  const { theme, toggleTheme, setTheme, lang, toggleLang } = useHotelStore();
   const isDay = theme === 'day';
+  const isBn = lang === 'bn';
 
   // Hydrate saved theme on mount
   useEffect(() => {
@@ -464,11 +476,11 @@ function OwnerDashboardContent() {
           {/* Navigation Links */}
           <nav className="p-3 space-y-1.5">
             {[
-              { id: 'overview', label: 'Dashboard Overview', icon: '📊' },
-              { id: 'rooms', label: 'Room Management', icon: '🛏️' },
-              { id: 'bookings', label: 'Guest Bookings', icon: '📅' },
-              { id: 'finance', label: 'Financial & Expenses', icon: '💰' },
-              { id: 'staff', label: 'Staff Management', icon: '👥' },
+              { id: 'overview', label: isBn ? 'সারসংক্ষেপ' : 'Dashboard Overview', icon: '📊' },
+              { id: 'rooms', label: isBn ? 'রুম ব্যবস্থাপনা' : 'Room Management', icon: '🛏️' },
+              { id: 'bookings', label: isBn ? 'বুকিং তালিকা' : 'Guest Bookings', icon: '📅' },
+              { id: 'finance', label: isBn ? 'টাকা-পয়সা ও খরচ' : 'Financial & Expenses', icon: '💰' },
+              { id: 'staff', label: isBn ? 'কর্মচারী ব্যবস্থাপনা' : 'Staff Management', icon: '👥' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -490,35 +502,35 @@ function OwnerDashboardContent() {
         <div className="p-4 border-t border-zinc-800 space-y-1.5">
           <Link
             href="/dashboard"
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white border border-zinc-700/80 transition-colors ${
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white border border-zinc-750 transition-colors ${
               !sidebarOpen && 'justify-center px-1'
             }`}
             title="Front Desk & Wake-Up List"
           >
             <span>🏨</span>
-            {sidebarOpen && <span>Front Desk & Wake-Up List</span>}
+            {sidebarOpen && <span>{isBn ? 'ফ্লাইট ও ওয়েক-আপ' : 'Front Desk & Wake-Up List'}</span>}
           </Link>
 
           <Link
             href="/counter-view"
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white border border-zinc-700/80 transition-colors ${
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white border border-zinc-750 transition-colors ${
               !sidebarOpen && 'justify-center px-1'
             }`}
             title="Counter Brochure View"
           >
             <span>🖥️</span>
-            {sidebarOpen && <span>Counter View Mode</span>}
+            {sidebarOpen && <span>{isBn ? 'কাউন্টার ভিউ' : 'Counter View Mode'}</span>}
           </Link>
 
           <Link
             href="/hotels"
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white border border-zinc-700/80 transition-colors ${
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white border border-zinc-750 transition-colors ${
               !sidebarOpen && 'justify-center px-1'
             }`}
             title="Guest Hotels Marketplace"
           >
             <span>🌐</span>
-            {sidebarOpen && <span>View Marketplace</span>}
+            {sidebarOpen && <span>{isBn ? 'মার্কেটপ্লেস দেখুন' : 'View Marketplace'}</span>}
           </Link>
 
           <button
@@ -528,7 +540,7 @@ function OwnerDashboardContent() {
             }`}
           >
             <span>🚪</span>
-            {sidebarOpen && <span>Sign Out</span>}
+            {sidebarOpen && <span>{isBn ? 'লগআউট' : 'Sign Out'}</span>}
           </button>
         </div>
       </aside>
@@ -539,37 +551,24 @@ function OwnerDashboardContent() {
         <header className="sticky top-0 z-20 bg-surface-1/90 backdrop-blur-xl border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-white capitalize">
-              {activeTab === 'overview' && 'Property Overview'}
-              {activeTab === 'rooms' && 'Room Inventory & Modification'}
-              {activeTab === 'bookings' && 'Reservations & Check-Ins'}
-              {activeTab === 'finance' && 'Money Tracking & Staff Expenses'}
-              {activeTab === 'staff' && 'Hotel Staff Management'}
+              {activeTab === 'overview' && (isBn ? 'হোটেল সারসংক্ষেপ' : 'Property Overview')}
+              {activeTab === 'rooms' && (isBn ? 'রুমের তালিকা ও পরিবর্তন' : 'Room Inventory & Modification')}
+              {activeTab === 'bookings' && (isBn ? 'গেস্ট বুকিং ও চেক-ইন' : 'Reservations & Check-Ins')}
+              {activeTab === 'finance' && (isBn ? 'আয়-ব্যয় ও কর্মচারী খরচ' : 'Money Tracking & Staff Expenses')}
+              {activeTab === 'staff' && (isBn ? 'হোটেল কর্মচারী ব্যবস্থাপনা' : 'Hotel Staff Management')}
             </h1>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Hotel Management System Active
+              {isBn ? 'সহজ হোটেল ম্যানেজমেন্ট সিস্টেম' : 'Hotel Management System Active'}
             </p>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            {/* 2 COLOR SHIFTING BUTTON */}
-            <button
-              onClick={toggleTheme}
-              className={`px-3 py-1.5 rounded-xl font-bold text-xs border flex items-center gap-1.5 shadow-sm transition-all ${
-                isDay
-                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-300'
-                  : 'bg-zinc-800 hover:bg-zinc-700 text-amber-300 border-zinc-700'
-              }`}
-              title="Click to switch between Day Mode and Night Mode"
-            >
-              <span>{isDay ? '☀️ Day Mode' : '🌙 Night Mode'}</span>
-            </button>
-
             <Link
               href="/dashboard"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white rounded-xl border border-zinc-750 transition-colors"
             >
               <span>🏨</span>
-              <span>Front Desk & Wake-Up List</span>
+              <span>{isBn ? 'ফ্লাইট ও ওয়েক-আপ' : 'Front Desk & Wake-Up List'}</span>
             </Link>
 
             <Link
@@ -577,7 +576,7 @@ function OwnerDashboardContent() {
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white rounded-xl border border-zinc-750 transition-colors"
             >
               <span>🖥️</span>
-              <span>Counter View</span>
+              <span>{isBn ? 'কাউন্টার ভিউ' : 'Counter View'}</span>
             </Link>
 
             <Link
@@ -585,14 +584,14 @@ function OwnerDashboardContent() {
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-surface-2 hover:bg-surface-3 text-zinc-300 hover:text-white rounded-xl border border-zinc-750 transition-colors"
             >
               <span>🌐</span>
-              <span>Marketplace</span>
+              <span>{isBn ? 'মার্কেটপ্লেস' : 'Marketplace'}</span>
             </Link>
             {activeTab === 'rooms' && (
               <button
                 onClick={openCreateRoomModal}
                 className="px-4 py-2 text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5"
               >
-                <span>➕</span> Add New Room
+                <span>➕</span> {isBn ? 'নতুন রুম যোগ করুন' : 'Add New Room'}
               </button>
             )}
             {activeTab === 'staff' && (
@@ -600,7 +599,7 @@ function OwnerDashboardContent() {
                 onClick={() => setStaffModal({ open: true })}
                 className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5"
               >
-                <span>➕</span> Add Staff
+                <span>➕</span> {isBn ? 'নতুন কর্মচারী' : 'Add Staff'}
               </button>
             )}
             {activeTab === 'finance' && (
@@ -608,16 +607,36 @@ function OwnerDashboardContent() {
                 onClick={() => setExpenseModal({ open: true })}
                 className="px-4 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5"
               >
-                <span>💸</span> Record Expense
+                <span>💸</span> {isBn ? 'খরচ লিখুন' : 'Record Expense'}
               </button>
             )}
             <button
               onClick={fetchData}
               className="p-2 text-xs bg-surface-2 hover:bg-surface-3 text-zinc-300 rounded-xl border border-zinc-800 transition-colors"
-              title="Refresh Data"
+              title={isBn ? 'তথ্য রিফ্রেশ করুন' : 'Refresh Data'}
             >
               🔄
             </button>
+
+            {/* Quick Settings: Language & Day/Night Mode (in Emoji, at the very last) */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
+              <button
+                onClick={toggleLang}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-surface-2 hover:bg-surface-3 border border-zinc-700/80 shadow-sm transition-all hover:scale-105 active:scale-95"
+                title={isBn ? 'Switch to English (🇬🇧)' : 'বাংলায় দেখুন (🇧🇩)'}
+                aria-label="Toggle Language"
+              >
+                <span>{isBn ? '🇧🇩' : '🇬🇧'}</span>
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-surface-2 hover:bg-surface-3 border border-zinc-700/80 shadow-sm transition-all hover:scale-105 active:scale-95 text-amber-300"
+                title={theme === 'day' ? 'Switch to Night Mode (🌙)' : 'Switch to Day Mode (☀️)'}
+                aria-label="Toggle Theme"
+              >
+                <span>{theme === 'day' ? '☀️' : '🌙'}</span>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -634,37 +653,49 @@ function OwnerDashboardContent() {
             <div className="space-y-6">
               {/* Stat Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard label="Total Rooms" value={totalRooms} icon="🚪" color="brand" />
-                <StatCard label="Available" value={availableRooms} icon="🟢" color="emerald" />
-                <StatCard label="Occupied" value={occupiedRooms} icon="🔴" color="rose" />
-                <StatCard label="Maintenance" value={maintenanceRooms} icon="🔧" color="amber" />
+                <StatCard label={isBn ? 'মোট রুম' : 'Total Rooms'} value={totalRooms} icon="🚪" color="brand" />
+                <StatCard label={isBn ? 'খালি রুম' : 'Available'} value={availableRooms} icon="🟢" color="emerald" />
+                <StatCard label={isBn ? 'ভাড়া দেওয়া' : 'Occupied'} value={occupiedRooms} icon="🔴" color="rose" />
+                <StatCard label={isBn ? 'মেরামত/পরিষ্কার' : 'Maintenance'} value={maintenanceRooms} icon="🔧" color="amber" />
               </div>
 
               {/* Financial KPI Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-6 rounded-2xl bg-surface-1 border border-zinc-800 flex flex-col justify-between shadow-lg">
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Total Bookings Income</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                    {isBn ? 'বুকিং থেকে মোট আয়' : 'Total Bookings Income'}
+                  </span>
                   <div className="mt-2">
                     <span className="text-3xl font-black text-emerald-400">{formatCurrency(totalBookingRevenue)}</span>
-                    <span className="text-xs text-zinc-500 block mt-1">From all confirmed reservations</span>
+                    <span className="text-xs text-zinc-500 block mt-1">
+                      {isBn ? 'সব নিশ্চিত বুকিং থেকে সংগৃহীত' : 'From all confirmed reservations'}
+                    </span>
                   </div>
                 </div>
 
                 <div className="p-6 rounded-2xl bg-surface-1 border border-zinc-800 flex flex-col justify-between shadow-lg">
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Total Staff Expenses</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                    {isBn ? 'মোট কর্মচারী ও অন্যান্য খরচ' : 'Total Staff Expenses'}
+                  </span>
                   <div className="mt-2">
                     <span className="text-3xl font-black text-rose-400">{formatCurrency(totalStaffExpenses)}</span>
-                    <span className="text-xs text-zinc-500 block mt-1">Salaries, advances, bonuses</span>
+                    <span className="text-xs text-zinc-500 block mt-1">
+                      {isBn ? 'বেতন, অগ্রিম এবং অন্যান্য খরচ' : 'Salaries, advances, bonuses'}
+                    </span>
                   </div>
                 </div>
 
                 <div className="p-6 rounded-2xl bg-surface-1 border border-brand-500/30 bg-gradient-to-br from-brand-950/20 to-surface-1 flex flex-col justify-between shadow-lg">
-                  <span className="text-xs font-bold uppercase tracking-wider text-brand-400">Net Profit</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-brand-400">
+                    {isBn ? 'হাতে লাভ (নিট লাভ)' : 'Net Profit'}
+                  </span>
                   <div className="mt-2">
                     <span className={`text-3xl font-black ${netProfit >= 0 ? 'text-brand-300' : 'text-rose-400'}`}>
                       {formatCurrency(netProfit)}
                     </span>
-                    <span className="text-xs text-zinc-500 block mt-1">Income minus Staff Expenses</span>
+                    <span className="text-xs text-zinc-500 block mt-1">
+                      {isBn ? 'মোট আয় থেকে খরচ বাদ দিয়ে' : 'Income minus Staff Expenses'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -672,17 +703,21 @@ function OwnerDashboardContent() {
               {/* Recent Bookings Snapshot */}
               <div className="p-6 rounded-3xl bg-surface-1 border border-zinc-800">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-base font-bold text-white">Recent Guest Bookings</h3>
+                  <h3 className="text-base font-bold text-white">
+                    {isBn ? 'সাম্প্রতিক গেস্ট বুকিং' : 'Recent Guest Bookings'}
+                  </h3>
                   <button
                     onClick={() => setActiveTab('bookings')}
                     className="text-xs font-semibold text-brand-400 hover:text-brand-300"
                   >
-                    View All ({bookings.length}) →
+                    {isBn ? `সব দেখুন (${bookings.length}) →` : `View All (${bookings.length}) →`}
                   </button>
                 </div>
 
                 {bookings.length === 0 ? (
-                  <p className="text-xs text-zinc-500 py-6 text-center">No bookings recorded yet.</p>
+                  <p className="text-xs text-zinc-500 py-6 text-center">
+                    {isBn ? 'এখনও কোনো বুকিং তালিকাভুক্ত হয়নি।' : 'No bookings recorded yet.'}
+                  </p>
                 ) : (
                   <div className="divide-y divide-zinc-800/80">
                     {bookings.slice(0, 5).map((b) => (
@@ -690,12 +725,12 @@ function OwnerDashboardContent() {
                         <div>
                           <span className="font-bold text-white block">{b.guest_name}</span>
                           <span className="text-zinc-500">
-                            Room {b.room_number || 'N/A'} • {formatDate(b.check_in_date)} to {formatDate(b.check_out_date)}
+                            {isBn ? `রুম ${b.room_number || 'N/A'}` : `Room ${b.room_number || 'N/A'}`} • {formatDate(b.check_in_date)} to {formatDate(b.check_out_date)}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="font-black text-white">{formatCurrency(b.total_amount)}</span>
-                          <StatusBadge status={b.status} />
+                          <StatusBadge status={b.status} isBn={isBn} />
                         </div>
                       </div>
                     ))}
@@ -710,16 +745,18 @@ function OwnerDashboardContent() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-white">All Property Rooms</h2>
+                  <h2 className="text-lg font-bold text-white">
+                    {isBn ? 'হোটেলের সব রুম' : 'All Property Rooms'}
+                  </h2>
                   <p className="text-xs text-zinc-400">
-                    Modify room numbers, room types, pricing, status, and facilities as needed.
+                    {isBn ? 'রুম নম্বর, ক্যাটাগরি, ভাড়া এবং অবস্থা সহজে পরিবর্তন করুন।' : 'Modify room numbers, room types, pricing, status, and facilities as needed.'}
                   </p>
                 </div>
                 <button
                   onClick={openCreateRoomModal}
                   className="px-4 py-2 text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5"
                 >
-                  <span>➕</span> Add Room
+                  <span>➕</span> {isBn ? 'নতুন রুম যোগ করুন' : 'Add Room'}
                 </button>
               </div>
 
@@ -740,9 +777,9 @@ function OwnerDashboardContent() {
                           <img src={imageUrl} alt={room.room_number} className="w-full h-full object-cover" />
                           <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
                             <span className="px-3 py-1 bg-surface-0/90 text-white text-xs font-black rounded-xl border border-zinc-700">
-                              Room {room.room_number}
+                              {isBn ? `রুম ${room.room_number}` : `Room ${room.room_number}`}
                             </span>
-                            <StatusBadge status={room.current_status} />
+                            <StatusBadge status={room.current_status} isBn={isBn} />
                           </div>
                         </div>
 
@@ -773,14 +810,14 @@ function OwnerDashboardContent() {
                       <div className="p-5 pt-0 flex items-center gap-2">
                         <button
                           onClick={() => openEditRoomModal(room)}
-                          className="flex-1 py-2 text-xs font-bold text-white bg-surface-2 hover:bg-surface-3 rounded-xl border border-zinc-700 transition-colors flex items-center justify-center gap-1.5"
+                          className="flex-1 py-2 text-xs font-bold text-white bg-surface-2 hover:bg-surface-3 rounded-xl border border-zinc-750 transition-colors flex items-center justify-center gap-1.5"
                         >
-                          <span>✏️</span> Edit Details
+                          <span>✏️</span> {isBn ? 'তথ্য পরিবর্তন করুন' : 'Edit Details'}
                         </button>
                         <button
                           onClick={() => setDeleteConfirm({ open: true, roomId: room.id })}
                           className="p-2 text-xs font-bold text-rose-400 hover:text-white bg-rose-950/30 hover:bg-rose-900/60 rounded-xl border border-rose-900 transition-colors"
-                          title="Delete Room"
+                          title={isBn ? 'রুম ডিলিট করুন' : 'Delete Room'}
                         >
                           🗑️
                         </button>
@@ -797,13 +834,15 @@ function OwnerDashboardContent() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-white">All Guest Bookings</h2>
+                  <h2 className="text-lg font-bold text-white">
+                    {isBn ? 'সব গেস্ট বুকিং তালিকা' : 'All Guest Bookings'}
+                  </h2>
                   <p className="text-xs text-zinc-400">
-                    Manage guest reservations, perform check-ins and free up rooms upon check-out.
+                    {isBn ? 'গেস্টের তালিকা দেখুন, সরাসরি চেক-ইন করান এবং চলে গেলে চেক-আউট করে রুম খালি করুন।' : 'Manage guest reservations, perform check-ins and free up rooms upon check-out.'}
                   </p>
                 </div>
                 <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-surface-1 border border-zinc-800 text-zinc-400">
-                  Total: {bookings.length}
+                  {isBn ? `মোট বুকিং: ${bookings.length}` : `Total: ${bookings.length}`}
                 </span>
               </div>
 
@@ -812,13 +851,13 @@ function OwnerDashboardContent() {
                   <table className="w-full text-left text-xs">
                     <thead className="bg-surface-2 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
                       <tr>
-                        <th className="p-4">Guest Info</th>
-                        <th className="p-4">Room #</th>
-                        <th className="p-4">Dates</th>
-                        <th className="p-4">Source</th>
-                        <th className="p-4">Amount</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4 text-right">Actions</th>
+                        <th className="p-4">{isBn ? 'গেস্টের তথ্য' : 'Guest Info'}</th>
+                        <th className="p-4">{isBn ? 'রুম নং' : 'Room #'}</th>
+                        <th className="p-4">{isBn ? 'তারিখ' : 'Dates'}</th>
+                        <th className="p-4">{isBn ? 'বুকিং মাধ্যম' : 'Source'}</th>
+                        <th className="p-4">{isBn ? 'মোট টাকা' : 'Amount'}</th>
+                        <th className="p-4">{isBn ? 'অবস্থা' : 'Status'}</th>
+                        <th className="p-4 text-right">{isBn ? 'করণীয়' : 'Actions'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800/80">
@@ -826,10 +865,10 @@ function OwnerDashboardContent() {
                         <tr key={b.id} className="hover:bg-surface-2/40 transition-colors">
                           <td className="p-4">
                             <span className="font-bold text-white block">{b.guest_name}</span>
-                            <span className="text-zinc-500">{b.guest_phone || 'No phone'}</span>
+                            <span className="text-zinc-500">{b.guest_phone || (isBn ? 'ফোন নেই' : 'No phone')}</span>
                           </td>
                           <td className="p-4 font-black text-brand-300">
-                            {b.room_number || 'Room N/A'}
+                            {b.room_number ? (isBn ? `রুম ${b.room_number}` : `Room ${b.room_number}`) : 'N/A'}
                           </td>
                           <td className="p-4 text-zinc-400">
                             {formatDate(b.check_in_date)} → {formatDate(b.check_out_date)}
@@ -841,7 +880,7 @@ function OwnerDashboardContent() {
                             {formatCurrency(b.total_amount)}
                           </td>
                           <td className="p-4">
-                            <StatusBadge status={b.status} />
+                            <StatusBadge status={b.status} isBn={isBn} />
                           </td>
                           <td className="p-4 text-right space-x-2">
                             {b.status === 'confirmed' && (
@@ -849,7 +888,7 @@ function OwnerDashboardContent() {
                                 onClick={() => handleUpdateBookingStatus(b.id, 'checked_in')}
                                 className="px-2.5 py-1 text-[11px] font-bold bg-sky-600/30 hover:bg-sky-600 text-sky-200 rounded-lg border border-sky-500/40 transition-all"
                               >
-                                Check In
+                                {isBn ? 'চেক-ইন' : 'Check In'}
                               </button>
                             )}
                             {b.status !== 'checked_out' && b.status !== 'cancelled' && (
@@ -857,7 +896,7 @@ function OwnerDashboardContent() {
                                 onClick={() => handleUpdateBookingStatus(b.id, 'checked_out')}
                                 className="px-2.5 py-1 text-[11px] font-bold bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 rounded-lg border border-emerald-500/40 transition-all"
                               >
-                                Check Out (Free Room)
+                                {isBn ? 'চেক-আউট (রুম খালি)' : 'Check Out (Free Room)'}
                               </button>
                             )}
                             {b.status !== 'cancelled' && b.status !== 'checked_out' && (
@@ -865,7 +904,7 @@ function OwnerDashboardContent() {
                                 onClick={() => handleUpdateBookingStatus(b.id, 'cancelled')}
                                 className="px-2.5 py-1 text-[11px] font-bold bg-rose-600/30 hover:bg-rose-600 text-rose-200 rounded-lg border border-rose-500/40 transition-all"
                               >
-                                Cancel
+                                {isBn ? 'বাতিল' : 'Cancel'}
                               </button>
                             )}
                           </td>
@@ -885,37 +924,43 @@ function OwnerDashboardContent() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="p-6 rounded-3xl bg-surface-1 border border-zinc-800 shadow-xl">
                   <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                    🟢 Room Bookings Revenue
+                    {isBn ? '🟢 রুম বুকিংয়ের মোট আয়' : '🟢 Room Bookings Revenue'}
                   </span>
                   <div className="mt-2">
                     <span className="text-3xl font-black text-white">
                       {formatCurrency(totalBookingRevenue)}
                     </span>
-                    <p className="text-xs text-zinc-500 mt-1">Total calculated from active guest stays</p>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      {isBn ? 'বুকিং থেকে সংগৃহীত অর্থ' : 'Total calculated from active guest stays'}
+                    </p>
                   </div>
                 </div>
 
                 <div className="p-6 rounded-3xl bg-surface-1 border border-zinc-800 shadow-xl">
                   <span className="text-xs font-bold uppercase tracking-wider text-rose-400">
-                    🔴 Staff Related Money / Expenses
+                    {isBn ? '🔴 কর্মচারী ও অন্যান্য খরচ' : '🔴 Staff Related Money / Expenses'}
                   </span>
                   <div className="mt-2">
                     <span className="text-3xl font-black text-white">
                       {formatCurrency(totalStaffExpenses)}
                     </span>
-                    <p className="text-xs text-zinc-500 mt-1">Staff salaries, daily advances, and bonuses</p>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      {isBn ? 'বেতন, অগ্রিম এবং অন্যান্য খরচ' : 'Staff salaries, daily advances, and bonuses'}
+                    </p>
                   </div>
                 </div>
 
                 <div className="p-6 rounded-3xl bg-surface-1 border border-brand-500/40 shadow-xl bg-gradient-to-br from-brand-950/20 to-surface-1">
                   <span className="text-xs font-bold uppercase tracking-wider text-brand-400">
-                    💎 Net Hotel Profit
+                    {isBn ? '💎 হোটেলের নিট লাভ' : '💎 Net Hotel Profit'}
                   </span>
                   <div className="mt-2">
                     <span className="text-3xl font-black text-emerald-400">
                       {formatCurrency(netProfit)}
                     </span>
-                    <p className="text-xs text-zinc-500 mt-1">Room Revenue minus Staff Expenses</p>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      {isBn ? 'রুমের আয় থেকে মোট খরচ বাদ দিয়ে' : 'Room Revenue minus Staff Expenses'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -924,34 +969,36 @@ function OwnerDashboardContent() {
               <div className="p-6 rounded-3xl bg-surface-1 border border-zinc-800 shadow-xl space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-bold text-white">Staff Expenses Log</h3>
+                    <h3 className="text-base font-bold text-white">
+                      {isBn ? 'খরচের খাতা (স্টাফ খরচ ও অন্যান্য)' : 'Staff Expenses Log'}
+                    </h3>
                     <p className="text-xs text-zinc-400">
-                      Track salary distributions, meal allowances, and staff advances.
+                      {isBn ? 'বেতন প্রদান, কর্মচারীদের হাতখরচ বা অগ্রিম টাকা লিখে রাখুন।' : 'Track salary distributions, meal allowances, and staff advances.'}
                     </p>
                   </div>
                   <button
                     onClick={() => setExpenseModal({ open: true })}
                     className="px-4 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5"
                   >
-                    <span>💸</span> Add Expense Record
+                    <span>💸</span> {isBn ? 'খরচ যোগ করুন' : 'Add Expense Record'}
                   </button>
                 </div>
 
                 {expenses.length === 0 ? (
                   <p className="text-xs text-zinc-500 py-6 text-center">
-                    No staff expenses recorded yet. Click &quot;Add Expense Record&quot; to log staff payments.
+                    {isBn ? 'এখনও কোনো খরচ লেখা হয়নি। উপরে "খরচ যোগ করুন" বাটনে ক্লিক করুন।' : 'No staff expenses recorded yet. Click "Add Expense Record" to log staff payments.'}
                   </p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead className="bg-surface-2 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
                         <tr>
-                          <th className="p-3">Staff Member</th>
-                          <th className="p-3">Category</th>
-                          <th className="p-3">Expense Date</th>
-                          <th className="p-3">Notes</th>
-                          <th className="p-3">Amount</th>
-                          <th className="p-3 text-right">Action</th>
+                          <th className="p-3">{isBn ? 'কর্মচারীর নাম' : 'Staff Member'}</th>
+                          <th className="p-3">{isBn ? 'খরচের ধরন' : 'Category'}</th>
+                          <th className="p-3">{isBn ? 'তারিখ' : 'Expense Date'}</th>
+                          <th className="p-3">{isBn ? 'বিবরণ/নোট' : 'Notes'}</th>
+                          <th className="p-3">{isBn ? 'টাকার পরিমাণ' : 'Amount'}</th>
+                          <th className="p-3 text-right">{isBn ? 'মুছুন' : 'Action'}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-800/80">
@@ -970,7 +1017,7 @@ function OwnerDashboardContent() {
                               <button
                                 onClick={() => handleDeleteExpense(exp.id)}
                                 className="text-zinc-500 hover:text-rose-400 p-1"
-                                title="Delete Record"
+                                title={isBn ? 'খরচ মুছুন' : 'Delete Record'}
                               >
                                 🗑️
                               </button>
@@ -990,24 +1037,30 @@ function OwnerDashboardContent() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-white">Staff Roster &amp; Monthly Payroll</h2>
+                  <h2 className="text-lg font-bold text-white">
+                    {isBn ? 'কর্মচারীদের তালিকা ও বেতন' : 'Staff Roster & Monthly Payroll'}
+                  </h2>
                   <p className="text-xs text-zinc-400">
-                    Manage hotel staff members, contact info, monthly salaries, and payment statuses.
+                    {isBn ? 'হোটেলের কর্মচারী, ফোন নম্বর, মাসিক বেতন এবং পরিশোধের হিসাব রাখুন।' : 'Manage hotel staff members, contact info, monthly salaries, and payment statuses.'}
                   </p>
                 </div>
                 <button
                   onClick={() => setStaffModal({ open: true })}
                   className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5"
                 >
-                  <span>➕</span> Add Staff Member
+                  <span>➕</span> {isBn ? 'নতুন কর্মচারী যোগ করুন' : 'Add Staff Member'}
                 </button>
               </div>
 
               {staff.length === 0 ? (
                 <div className="p-12 text-center bg-surface-1 border border-zinc-800 rounded-3xl">
                   <span className="text-3xl block mb-2">👥</span>
-                  <p className="text-sm font-bold text-white">No staff members registered</p>
-                  <p className="text-xs text-zinc-500 mt-1">Add your hotel receptionists, cleaners, and drivers.</p>
+                  <p className="text-sm font-bold text-white">
+                    {isBn ? 'কোনো কর্মচারীর তথ্য যোগ করা নেই' : 'No staff members registered'}
+                  </p>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    {isBn ? 'রিসেপশনিস্ট, ক্লিনার, ড্রাইভার বা বয়দের তালিকা যোগ করুন।' : 'Add your hotel receptionists, cleaners, and drivers.'}
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1028,16 +1081,16 @@ function OwnerDashboardContent() {
                                 : 'bg-amber-500/20 text-amber-400 border-amber-500/40'
                             }`}
                           >
-                            {s.salary_paid ? 'Salary Paid' : 'Pending Salary'}
+                            {s.salary_paid ? (isBn ? 'বেতন দেওয়া হয়েছে' : 'Salary Paid') : (isBn ? 'বেতন বাকি আছে' : 'Pending Salary')}
                           </span>
                         </div>
 
                         <h3 className="text-base font-bold text-white">{s.name}</h3>
                         <p className="text-xs text-brand-400 font-semibold">{s.role}</p>
-                        <p className="text-xs text-zinc-500 mt-1">📞 {s.phone || 'No phone'}</p>
+                        <p className="text-xs text-zinc-500 mt-1">📞 {s.phone || (isBn ? 'ফোন নম্বর নেই' : 'No phone')}</p>
 
                         <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-baseline justify-between">
-                          <span className="text-xs text-zinc-400">Monthly Base Salary</span>
+                          <span className="text-xs text-zinc-400">{isBn ? 'মাসিক বেতন' : 'Monthly Base Salary'}</span>
                           <span className="text-base font-black text-white">{formatCurrency(s.salary)}</span>
                         </div>
                       </div>
@@ -1051,12 +1104,12 @@ function OwnerDashboardContent() {
                               : 'bg-emerald-600 hover:bg-emerald-500 text-white'
                           }`}
                         >
-                          {s.salary_paid ? 'Mark Unpaid' : 'Mark Salary Paid'}
+                          {s.salary_paid ? (isBn ? 'বাকি হিসেবে চিহ্নিত করুন' : 'Mark Unpaid') : (isBn ? '✓ বেতন পরিশোধ সম্পন্ন' : 'Mark Salary Paid')}
                         </button>
                         <button
                           onClick={() => handleDeleteStaff(s.id)}
                           className="p-2 text-xs text-rose-400 hover:text-white bg-rose-950/30 hover:bg-rose-900 rounded-xl border border-rose-900"
-                          title="Delete Staff"
+                          title={isBn ? 'কর্মচারী মুছুন' : 'Delete Staff'}
                         >
                           🗑️
                         </button>
@@ -1073,33 +1126,33 @@ function OwnerDashboardContent() {
       {/* ─── MODAL: CREATE / EDIT ROOM (MODIFY EVERYTHING) ─── */}
       {roomModal.open && (
         <Modal
-          title={roomModal.mode === 'create' ? 'Add New Room' : 'Edit Room Details'}
+          title={roomModal.mode === 'create' ? (isBn ? 'নতুন রুম যোগ করুন' : 'Add New Room') : (isBn ? 'রুমের তথ্য পরিবর্তন' : 'Edit Room Details')}
           onClose={() => setRoomModal({ open: false, mode: 'create', room: null })}
         >
           <form onSubmit={handleSaveRoom} className="space-y-4">
-            <Field label="Room Number">
+            <Field label={isBn ? 'রুম নম্বর' : 'Room Number'}>
               <input
                 type="text"
                 required
-                placeholder="e.g. 105 or 301"
+                placeholder={isBn ? 'যেমন: ১০৫ বা ৩০১' : 'e.g. 105 or 301'}
                 value={roomForm.room_number}
                 onChange={(e) => setRoomForm({ ...roomForm, room_number: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface-2 border border-zinc-700 text-white text-sm focus:border-brand-500 focus:outline-none"
               />
             </Field>
 
-            <Field label="Room Type / Category">
+            <Field label={isBn ? 'রুমের ক্যাটাগরি / টাইপ' : 'Room Type / Category'}>
               <input
                 type="text"
                 required
-                placeholder="e.g. Executive Transit Suite"
+                placeholder={isBn ? 'যেমন: এক্সিকিউটিভ ট্রানজিট রুম' : 'e.g. Executive Transit Suite'}
                 value={roomForm.type}
                 onChange={(e) => setRoomForm({ ...roomForm, type: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface-2 border border-zinc-700 text-white text-sm focus:border-brand-500 focus:outline-none"
               />
             </Field>
 
-            <Field label="Base Price (BDT / night)">
+            <Field label={isBn ? '১ রাতের ভাড়া (টাকা)' : 'Base Price (BDT / night)'}>
               <input
                 type="number"
                 required
@@ -1112,19 +1165,19 @@ function OwnerDashboardContent() {
               />
             </Field>
 
-            <Field label="Current Status">
+            <Field label={isBn ? 'বর্তমান অবস্থা' : 'Current Status'}>
               <select
                 value={roomForm.current_status}
                 onChange={(e) => setRoomForm({ ...roomForm, current_status: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface-2 border border-zinc-700 text-white text-sm focus:border-brand-500 focus:outline-none"
               >
-                <option value="available">Available (Vacant)</option>
-                <option value="occupied">Occupied (Guest In Room)</option>
-                <option value="maintenance">Under Maintenance / Housekeeping</option>
+                <option value="available">{isBn ? 'খালি আছে (Available)' : 'Available (Vacant)'}</option>
+                <option value="occupied">{isBn ? 'গেস্ট আছে (Occupied)' : 'Occupied (Guest In Room)'}</option>
+                <option value="maintenance">{isBn ? 'পরিষ্কার/মেরামত চলছে (Maintenance)' : 'Under Maintenance / Housekeeping'}</option>
               </select>
             </Field>
 
-            <Field label="Room Image URL (Unsplash or direct image link)">
+            <Field label={isBn ? 'রুমের ছবির লিংক (অপশনাল)' : 'Room Image URL (Unsplash or direct image link)'}>
               <input
                 type="url"
                 placeholder="https://images.unsplash.com/photo-..."
@@ -1134,10 +1187,10 @@ function OwnerDashboardContent() {
               />
             </Field>
 
-            <Field label="Facilities & Comforts (Comma-separated)">
+            <Field label={isBn ? 'সুযোগ-সুবিধাসমূহ (কমা দিয়ে লিখুন)' : 'Facilities & Comforts (Comma-separated)'}>
               <input
                 type="text"
-                placeholder="AC, King Bed, Free Wi-Fi, Geyser, TV"
+                placeholder={isBn ? 'এসি, গিজার, ওয়াইফাই, টিভি' : 'AC, King Bed, Free Wi-Fi, Geyser, TV'}
                 value={roomForm.facilities}
                 onChange={(e) => setRoomForm({ ...roomForm, facilities: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface-2 border border-zinc-700 text-white text-sm focus:border-brand-500 focus:outline-none"
@@ -1150,13 +1203,13 @@ function OwnerDashboardContent() {
                 onClick={() => setRoomModal({ open: false, mode: 'create', room: null })}
                 className="flex-1 py-2.5 text-xs font-bold bg-surface-2 hover:bg-surface-3 text-zinc-300 rounded-xl border border-zinc-700 transition-colors"
               >
-                Cancel
+                {isBn ? 'বাতিল' : 'Cancel'}
               </button>
               <button
                 type="submit"
                 className="flex-1 py-2.5 text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow-lg transition-all"
               >
-                {roomModal.mode === 'create' ? 'Save Room' : 'Apply Changes'}
+                {roomModal.mode === 'create' ? (isBn ? 'সংরক্ষণ করুন' : 'Save Room') : (isBn ? 'আপডেট করুন' : 'Apply Changes')}
               </button>
             </div>
           </form>
@@ -1165,22 +1218,22 @@ function OwnerDashboardContent() {
 
       {/* ─── MODAL: DELETE ROOM CONFIRMATION ─── */}
       {deleteConfirm.open && (
-        <Modal title="Delete Room" onClose={() => setDeleteConfirm({ open: false, roomId: null })}>
+        <Modal title={isBn ? 'রুম মুছবেন?' : 'Delete Room'} onClose={() => setDeleteConfirm({ open: false, roomId: null })}>
           <p className="text-sm text-zinc-300 leading-relaxed">
-            Are you sure you want to permanently delete this room? This cannot be undone.
+            {isBn ? 'আপনি কি নিশ্চিত এই রুমটি চিরতরে মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না।' : 'Are you sure you want to permanently delete this room? This cannot be undone.'}
           </p>
           <div className="flex items-center gap-3 mt-6">
             <button
               onClick={() => setDeleteConfirm({ open: false, roomId: null })}
               className="flex-1 py-2.5 text-xs font-bold bg-surface-2 text-zinc-300 rounded-xl border border-zinc-700"
             >
-              Cancel
+              {isBn ? 'না, রাখুন' : 'Cancel'}
             </button>
             <button
               onClick={handleDeleteRoom}
               className="flex-1 py-2.5 text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white rounded-xl shadow-lg"
             >
-              Confirm Delete
+              {isBn ? 'হ্যাঁ, মুছে ফেলুন' : 'Confirm Delete'}
             </button>
           </div>
         </Modal>
@@ -1188,31 +1241,31 @@ function OwnerDashboardContent() {
 
       {/* ─── MODAL: ADD STAFF ─── */}
       {staffModal.open && (
-        <Modal title="Add Staff Member" onClose={() => setStaffModal({ open: false })}>
+        <Modal title={isBn ? 'নতুন কর্মচারী যোগ করুন' : 'Add Staff Member'} onClose={() => setStaffModal({ open: false })}>
           <form onSubmit={handleCreateStaff} className="space-y-4">
-            <Field label="Staff Full Name">
+            <Field label={isBn ? 'কর্মচারীর পুরো নাম' : 'Staff Full Name'}>
               <input
                 type="text"
                 required
-                placeholder="e.g. Kamal Hossain"
+                placeholder={isBn ? 'যেমন: কামাল হোসেন' : 'e.g. Kamal Hossain'}
                 value={staffForm.name}
                 onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface-2 border border-zinc-700 text-white text-sm focus:border-brand-500 focus:outline-none"
               />
             </Field>
 
-            <Field label="Role / Designation">
+            <Field label={isBn ? 'পদবি / দায়িত্ব' : 'Role / Designation'}>
               <input
                 type="text"
                 required
-                placeholder="e.g. Front Desk Officer, Night Duty Manager, Cleaner"
+                placeholder={isBn ? 'যেমন: রিসেপশনিস্ট, নাইট ম্যানেজার, ক্লিনার' : 'e.g. Front Desk Officer, Night Duty Manager, Cleaner'}
                 value={staffForm.role}
                 onChange={(e) => setStaffForm({ ...staffForm, role: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface-2 border border-zinc-700 text-white text-sm focus:border-brand-500 focus:outline-none"
               />
             </Field>
 
-            <Field label="Phone Contact">
+            <Field label={isBn ? 'মোবাইল নম্বর' : 'Phone Contact'}>
               <input
                 type="text"
                 placeholder="+880 1700-000000"
@@ -1222,7 +1275,7 @@ function OwnerDashboardContent() {
               />
             </Field>
 
-            <Field label="Monthly Base Salary (BDT)">
+            <Field label={isBn ? 'মাসিক বেতন (টাকা)' : 'Monthly Base Salary (BDT)'}>
               <input
                 type="number"
                 required
@@ -1241,13 +1294,13 @@ function OwnerDashboardContent() {
                 onClick={() => setStaffModal({ open: false })}
                 className="flex-1 py-2.5 text-xs font-bold bg-surface-2 text-zinc-300 rounded-xl border border-zinc-700"
               >
-                Cancel
+                {isBn ? 'বাতিল' : 'Cancel'}
               </button>
               <button
                 type="submit"
                 className="flex-1 py-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-lg"
               >
-                Register Staff
+                {isBn ? 'যুক্ত করুন' : 'Register Staff'}
               </button>
             </div>
           </form>
@@ -1256,34 +1309,34 @@ function OwnerDashboardContent() {
 
       {/* ─── MODAL: ADD STAFF EXPENSE ─── */}
       {expenseModal.open && (
-        <Modal title="Record Staff Expense" onClose={() => setExpenseModal({ open: false })}>
+        <Modal title={isBn ? 'খরচের হিসাব লিখুন' : 'Record Staff Expense'} onClose={() => setExpenseModal({ open: false })}>
           <form onSubmit={handleCreateExpense} className="space-y-4">
-            <Field label="Staff Member / Recipient Name">
+            <Field label={isBn ? 'কর্মচারী / প্রাপকের নাম' : 'Staff Member / Recipient Name'}>
               <input
                 type="text"
                 required
-                placeholder="e.g. Rafiqul Islam"
+                placeholder={isBn ? 'যেমন: রফিকুল ইসলাম' : 'e.g. Rafiqul Islam'}
                 value={expenseForm.staff_name}
                 onChange={(e) => setExpenseForm({ ...expenseForm, staff_name: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface-2 border border-zinc-700 text-white text-sm focus:border-brand-500 focus:outline-none"
               />
             </Field>
 
-            <Field label="Expense Category">
+            <Field label={isBn ? 'খরচের ধরন' : 'Expense Category'}>
               <select
                 value={expenseForm.category}
                 onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface-2 border border-zinc-700 text-white text-sm focus:border-brand-500 focus:outline-none"
               >
-                <option value="salary">Monthly Salary Payment</option>
-                <option value="advance">Salary Advance</option>
-                <option value="bonus">Bonus / Festival Allowance</option>
-                <option value="meals">Staff Meals &amp; Allowance</option>
-                <option value="other">Other Operational Expense</option>
+                <option value="salary">{isBn ? 'মাসিক বেতন' : 'Monthly Salary Payment'}</option>
+                <option value="advance">{isBn ? 'বেতনের অগ্রিম (Advance)' : 'Salary Advance'}</option>
+                <option value="bonus">{isBn ? 'বোনাস / উৎসব ভাতা' : 'Bonus / Festival Allowance'}</option>
+                <option value="meals">{isBn ? 'স্টাফ খাবার ও হাতখরচ' : 'Staff Meals & Allowance'}</option>
+                <option value="other">{isBn ? 'অন্যান্য খরচ' : 'Other Operational Expense'}</option>
               </select>
             </Field>
 
-            <Field label="Amount (BDT)">
+            <Field label={isBn ? 'টাকার পরিমাণ (টাকা)' : 'Amount (BDT)'}>
               <input
                 type="number"
                 required
@@ -1295,7 +1348,7 @@ function OwnerDashboardContent() {
               />
             </Field>
 
-            <Field label="Expense Date">
+            <Field label={isBn ? 'খরচের তারিখ' : 'Expense Date'}>
               <input
                 type="date"
                 required
@@ -1305,10 +1358,10 @@ function OwnerDashboardContent() {
               />
             </Field>
 
-            <Field label="Notes / Reason (Optional)">
+            <Field label={isBn ? 'বিবরণ / কারণ (অপশনাল)' : 'Notes / Reason (Optional)'}>
               <input
                 type="text"
-                placeholder="e.g. Advance for medical expense"
+                placeholder={isBn ? 'যেমন: চিকিৎসার জন্য অগ্রিম নেওয়া' : 'e.g. Advance for medical expense'}
                 value={expenseForm.notes}
                 onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface-2 border border-zinc-700 text-white text-sm focus:border-brand-500 focus:outline-none"
@@ -1321,13 +1374,13 @@ function OwnerDashboardContent() {
                 onClick={() => setExpenseModal({ open: false })}
                 className="flex-1 py-2.5 text-xs font-bold bg-surface-2 text-zinc-300 rounded-xl border border-zinc-700"
               >
-                Cancel
+                {isBn ? 'বাতিল' : 'Cancel'}
               </button>
               <button
                 type="submit"
                 className="flex-1 py-2.5 text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white rounded-xl shadow-lg"
               >
-                Save Expense Record
+                {isBn ? 'খরচ সংরক্ষণ করুন' : 'Save Expense Record'}
               </button>
             </div>
           </form>
