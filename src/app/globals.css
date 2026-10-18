@@ -21,7 +21,9 @@
   --color-surface-3: var(--surface-3);
 }
 
-/* Default: Night Mode (Dark) */
+/* ═══════════════════════════════════════════════
+   DEFAULT: NIGHT MODE (DARK)
+   ═══════════════════════════════════════════════ */
 :root {
   --background: #09090b;
   --foreground: #fafafa;
@@ -31,7 +33,9 @@
   --surface-3: #27272a;
 }
 
-/* Day Mode (Crisp, High-Contrast Light) */
+/* ═══════════════════════════════════════════════
+   DAY MODE (CRISP, HIGH-CONTRAST LIGHT THEME)
+   ═══════════════════════════════════════════════ */
 html[data-theme="day"],
 html.light {
   --background: #f8fafc;
@@ -42,54 +46,223 @@ html.light {
   --surface-3: #e2e8f0;
 }
 
+/* Base Body in Day Mode */
 html[data-theme="day"] body,
 html.light body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
 }
 
-html[data-theme="day"] .text-white,
-html.light .text-white {
-  color: #0f172a !important;
+/* Headings and titles in Day Mode */
+html[data-theme="day"] h1,
+html.light h1,
+html[data-theme="day"] h2,
+html.light h2,
+html[data-theme="day"] h3,
+html.light h3,
+html[data-theme="day"] h4,
+html.light h4,
+html[data-theme="day"] strong,
+html.light strong,
+html[data-theme="day"] b,
+html.light b {
+  color: #0f172a;
 }
 
+/* General text on cards in Day Mode (excluding buttons with solid color backgrounds) */
+html[data-theme="day"] :not([class*="bg-brand"]):not([class*="bg-rose"]):not([class*="bg-red"]):not([class*="bg-emerald"]):not([class*="bg-blue"]):not([class*="bg-green"]) > .text-white,
+html.light :not([class*="bg-brand"]):not([class*="bg-rose"]):not([class*="bg-red"]):not([class*="bg-emerald"]):not([class*="bg-blue"]):not([class*="bg-green"]) > .text-white,
+html[data-theme="day"] p.text-white,
+html.light p.text-white,
+html[data-theme="day"] span.text-white:not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-brand"]):not([class*="bg-emerald"]),
+html.light span.text-white:not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-brand"]):not([class*="bg-emerald"]) {
+  color: #0f172a;
+}
+
+/* Muted and secondary text in Day Mode */
 html[data-theme="day"] .text-zinc-50,
 html.light .text-zinc-50,
 html[data-theme="day"] .text-zinc-100,
 html.light .text-zinc-100 {
-  color: #1e293b !important;
+  color: #1e293b;
 }
 
 html[data-theme="day"] .text-zinc-200,
 html.light .text-zinc-200 {
-  color: #334155 !important;
+  color: #334155;
 }
 
 html[data-theme="day"] .text-zinc-300,
 html.light .text-zinc-300 {
-  color: #475569 !important;
+  color: #475569;
 }
 
 html[data-theme="day"] .text-zinc-400,
 html.light .text-zinc-400 {
-  color: #64748b !important;
+  color: #64748b;
 }
 
+html[data-theme="day"] .text-zinc-500,
+html.light .text-zinc-500 {
+  color: #64748b;
+}
+
+/* Ensure brand and emerald text pop with high contrast in Day Mode */
+html[data-theme="day"] .text-brand-400,
+html.light .text-brand-400 {
+  color: #1d4ed8 !important;
+}
+
+html[data-theme="day"] .text-brand-300,
+html.light .text-brand-300 {
+  color: #2563eb !important;
+}
+
+html[data-theme="day"] .text-emerald-400,
+html.light .text-emerald-400,
+html[data-theme="day"] .text-emerald-300,
+html.light .text-emerald-300 {
+  color: #047857 !important;
+}
+
+html[data-theme="day"] .text-rose-400,
+html.light .text-rose-400,
+html[data-theme="day"] .text-rose-300,
+html.light .text-rose-300 {
+  color: #b91c1c !important;
+}
+
+/* Borders in Day Mode */
 html[data-theme="day"] .border-zinc-800,
 html.light .border-zinc-800,
+html[data-theme="day"] .border-zinc-850,
+html.light .border-zinc-850,
 html[data-theme="day"] .border-zinc-750,
-html.light .border-zinc-750 {
+html.light .border-zinc-750,
+html[data-theme="day"] .border-surface-2,
+html.light .border-surface-2 {
   border-color: #e2e8f0 !important;
 }
 
 html[data-theme="day"] .border-zinc-700,
-html.light .border-zinc-700 {
+html.light .border-zinc-700,
+html[data-theme="day"] .border-surface-3,
+html.light .border-surface-3 {
   border-color: #cbd5e1 !important;
+}
+
+/* ═══════════════════════════════════════════════
+   CRITICAL BUTTON CONTRAST RULE:
+   Solid colored action buttons MUST ALWAYS have pure white text
+   ═══════════════════════════════════════════════ */
+html[data-theme="day"] button.bg-brand-600,
+html.light button.bg-brand-600,
+html[data-theme="day"] button.bg-brand-500,
+html.light button.bg-brand-500,
+html[data-theme="day"] button.bg-rose-600,
+html.light button.bg-rose-600,
+html[data-theme="day"] button.bg-red-600,
+html.light button.bg-red-600,
+html[data-theme="day"] button.bg-emerald-600,
+html.light button.bg-emerald-600,
+html[data-theme="day"] a.bg-brand-600,
+html.light a.bg-brand-600,
+html[data-theme="day"] .bg-brand-600,
+html.light .bg-brand-600,
+html[data-theme="day"] .bg-rose-600,
+html.light .bg-rose-600,
+html[data-theme="day"] .bg-red-600,
+html.light .bg-red-600,
+html[data-theme="day"] .bg-red-500,
+html.light .bg-red-500,
+html[data-theme="day"] .bg-emerald-600,
+html.light .bg-emerald-600 {
+  color: #ffffff !important;
+}
+
+html[data-theme="day"] .bg-brand-600 *,
+html.light .bg-brand-600 *,
+html[data-theme="day"] .bg-rose-600 *,
+html.light .bg-rose-600 *,
+html[data-theme="day"] .bg-red-600 *,
+html.light .bg-red-600 *,
+html[data-theme="day"] .bg-emerald-600 *,
+html.light .bg-emerald-600 * {
+  color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════════════
+   FORM INPUTS, SELECTS & TEXTAREAS IN DAY MODE
+   ═══════════════════════════════════════════════ */
+html[data-theme="day"] input:not([type="checkbox"]):not([type="radio"]),
+html.light input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="day"] select,
+html.light select,
+html[data-theme="day"] textarea,
+html.light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="day"] select option,
+html.light select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="day"] input::placeholder,
+html.light input::placeholder,
+html[data-theme="day"] textarea::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* ═══════════════════════════════════════════════
+   CARD GRADIENTS IN DAY MODE
+   ═══════════════════════════════════════════════ */
+/* Urgent flight card in Day Mode: subtle rose tint with clean red border */
+html[data-theme="day"] .from-rose-950\/40,
+html.light .from-rose-950\/40 {
+  --tw-gradient-from: #fef2f2 !important;
+}
+
+html[data-theme="day"] .border-rose-500\/60,
+html.light .border-rose-500\/60 {
+  border-color: #f87171 !important;
+}
+
+/* Scheduled flight card in Day Mode: subtle emerald tint with clean emerald border */
+html[data-theme="day"] .from-emerald-950\/30,
+html.light .from-emerald-950\/30 {
+  --tw-gradient-from: #f0fdf4 !important;
+}
+
+html[data-theme="day"] .border-emerald-500\/50,
+html.light .border-emerald-500\/50 {
+  border-color: #34d399 !important;
+}
+
+/* Urgent Alert Banner in Day Mode */
+html[data-theme="day"] .bg-rose-950\/80,
+html.light .bg-rose-950\/80 {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+}
+
+html[data-theme="day"] .bg-rose-950\/80 h3,
+html.light .bg-rose-950\/80 h3 {
+  color: #991b1b !important;
+}
+
+html[data-theme="day"] .bg-rose-950\/80 p,
+html.light .bg-rose-950\/80 p {
+  color: #b91c1c !important;
 }
 
 /* ─── Base Styles ─── */
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
