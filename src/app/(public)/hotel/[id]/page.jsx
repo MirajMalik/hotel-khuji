@@ -34,19 +34,11 @@ function HotelBookingContent() {
   // Booking form state
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
-  const [checkInDate, setCheckInDate] = useState('');
-  const [checkOutDate, setCheckOutDate] = useState('');
+  const [checkInDate, setCheckInDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [checkOutDate, setCheckOutDate] = useState(() => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [flightNumber, setFlightNumber] = useState('');
   const [flightDepartureTime, setFlightDepartureTime] = useState('');
   const [customWakeupTime, setCustomWakeupTime] = useState('');
-
-  // Hydrate initial dates on client mount (prevents SSR Date mismatch)
-  useEffect(() => {
-    const today = new Date();
-    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-    setCheckInDate(today.toISOString().split('T')[0]);
-    setCheckOutDate(tomorrow.toISOString().split('T')[0]);
-  }, []);
 
   // Fetch hotel and room data
   useEffect(() => {

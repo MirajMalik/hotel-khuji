@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import AvailableRoomCard from '@/components/booking/AvailableRoomCard';
@@ -91,7 +92,7 @@ export default function BookingPageClient({ hotelId }) {
             </svg>
           </div>
           <h2 className="text-lg font-semibold text-zinc-300">Hotel not found</h2>
-          <p className="text-sm text-zinc-500 mt-1">The hotel you're looking for doesn't exist.</p>
+          <p className="text-sm text-zinc-500 mt-1">The hotel you&apos;re looking for doesn&apos;t exist.</p>
         </div>
       </div>
     );
@@ -135,12 +136,12 @@ export default function BookingPageClient({ hotelId }) {
         <div className="absolute inset-0 bg-gradient-to-br from-brand-700/20 via-surface-0 to-emerald-900/10" />
         <div className="relative max-w-3xl mx-auto px-4 pt-12 pb-8">
           {/* Back link */}
-          <a href="/" className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 mb-6 transition-colors">
+          <Link href="/" className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 mb-6 transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
             All Hotels
-          </a>
+          </Link>
 
           <h1 className="text-3xl sm:text-4xl font-bold text-zinc-100 tracking-tight">
             {hotel.name}
