@@ -1,6 +1,6 @@
 /**
  * Centralized API Client for Hotel Khuji (Express + PostgreSQL Backend)
- * Automatically includes credentials for HTTP-only JWT cookies.
+ * Automatically includes credentials for HTTP-only JWT cookies and Authorization header.
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -12,6 +12,18 @@ async function request(endpoint, options = {}) {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
+
+  if (typeof window !== 'undefined' && !headers.Authorization) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    } else {
+      const match = document.cookie.match(/(?:^|;\s*)token=([^;]+)/);
+      if (match) {
+        headers.Authorization = `Bearer ${decodeURIComponent(match[1])}`;
+      }
+    }
+  }
 
   const response = await fetch(url, {
     ...options,

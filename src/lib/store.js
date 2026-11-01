@@ -5,6 +5,7 @@ import { todayISO, tomorrowISO } from './utils';
 /**
  * Global Zustand Store for Hotel Khuji PMS, Front Desk & Flight-Sync
  * Manages:
+ *  - Authentication & Current User Session
  *  - Front Desk Wake-Up Call Queue & Completion State
  *  - Active Hotel & Room States
  *  - Walk-In & Agency Reservations
@@ -17,6 +18,21 @@ export const useHotelStore = create((set, get) => ({
   isBookingLoading: false,
   notification: null,
   error: null,
+
+  // Authenticated User State (Immediate Cross-Component Sync)
+  currentUser: null,
+  setCurrentUser: (user) => {
+    if (typeof window !== 'undefined') {
+      if (user) {
+        localStorage.setItem('hotel_user', JSON.stringify(user));
+        window.dispatchEvent(new CustomEvent('hotel_auth_change', { detail: user }));
+      } else {
+        localStorage.removeItem('hotel_user');
+        window.dispatchEvent(new CustomEvent('hotel_auth_change', { detail: null }));
+      }
+    }
+    set({ currentUser: user });
+  },
 
   // Theme state: 'day' (crisp, high contrast light mode) or 'night' (dark mode)
   theme: 'night',
@@ -88,7 +104,6 @@ export const useHotelStore = create((set, get) => ({
 
   // Set initial flight wake-up queue
   setFrontdeskQueue: (queue) => {
-    // Populate initial completed map from database
     const initialCompleted = {};
     queue.forEach((item) => {
       if (item.wakeup_call_completed) {
@@ -101,12 +116,11 @@ export const useHotelStore = create((set, get) => ({
     });
   },
 
-  // Toggle or mark wake-up call completed in Zustand state & PostgreSQL backend
+  // Toggle or mark wake-up call completed
   toggleWakeupCall: async (bookingId, guestName = '') => {
     const currentStatus = Boolean(get().completedWakeupCalls[bookingId]);
     const nextStatus = !currentStatus;
 
-    // Optimistic UI update in Zustand
     set((state) => ({
       completedWakeupCalls: {
         ...state.completedWakeupCalls,
@@ -124,11 +138,9 @@ export const useHotelStore = create((set, get) => ({
     }));
 
     try {
-      // Sync with Express backend
       await api.patch(`/frontdesk/wakeup-call/${bookingId}`, { completed: nextStatus });
     } catch (err) {
       console.warn('Failed to sync wake-up status to server, reverting:', err.message);
-      // Rollback on network error
       set((state) => ({
         completedWakeupCalls: {
           ...state.completedWakeupCalls,
@@ -167,7 +179,6 @@ export const useHotelStore = create((set, get) => ({
     const checkOut = checkOutDate || tomorrowISO();
     const totalAmount = basePrice || 0;
 
-    // Optimistic update
     set((state) => ({
       rooms: state.rooms.map((room) =>
         room.id === roomId ? { ...room, current_status: 'occupied', status: 'occupied' } : room

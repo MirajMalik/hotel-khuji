@@ -100,20 +100,28 @@ export default function HotelCard({
               <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold bg-blue-600 text-white shadow-xs">
                 VERIFIED TRANSIT
               </span>
+              {hotel.shuttle_available && (
+                <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-black/60 backdrop-blur-md text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <Car className="w-3 h-3 text-emerald-400" />
+                  Free Shuttle
+                </span>
+              )}
             </div>
 
-            {/* Image Slider Controls */}
+            {/* Gallery Navigation Arrows */}
             {images.length > 1 && (
               <>
                 <button
+                  type="button"
                   onClick={prevImage}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80 z-10"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm z-10"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
+                  type="button"
                   onClick={nextImage}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80 z-10"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm z-10"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -148,10 +156,12 @@ export default function HotelCard({
                 </span>
               </div>
 
-              {/* Title */}
-              <h3 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
-                {hotel.name}
-              </h3>
+              {/* Title with link to Hotel Details */}
+              <Link href={`/hotel/${hotel.id}`}>
+                <h3 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug hover:underline">
+                  {hotel.name}
+                </h3>
+              </Link>
 
               {/* Location & Airport Distance */}
               <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
@@ -165,8 +175,8 @@ export default function HotelCard({
                 </span>
               </div>
 
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
-                {hotel.address}
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                {hotel.description || hotel.address}
               </p>
 
               {/* Booking Highlights */}
@@ -208,7 +218,7 @@ export default function HotelCard({
                 onClick={() => setShowRoomDrawer(!showRoomDrawer)}
                 className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
               >
-                <span>{showRoomDrawer ? 'Hide Rooms' : 'View Room Types'}</span>
+                <span>{showRoomDrawer ? 'Hide Quick Rooms' : 'Quick Room Preview'}</span>
                 {showRoomDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
             </div>
@@ -241,16 +251,15 @@ export default function HotelCard({
               <p className="text-[10px] font-bold text-emerald-600 mt-0.5">Zero advance required</p>
             </div>
 
-            {/* CTA Buttons */}
+            {/* CTA Buttons: Prominent "View Details" Button as requested */}
             <div className="mt-4 space-y-2">
-              <button
-                type="button"
-                onClick={() => setShowRoomDrawer(!showRoomDrawer)}
+              <Link
+                href={`/hotel/${hotel.id}`}
                 className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
-                <span>Select Room &amp; Book</span>
+                <span>View Details</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              </Link>
 
               <div className="grid grid-cols-2 gap-1.5">
                 <a
@@ -275,17 +284,20 @@ export default function HotelCard({
           </div>
         </div>
 
-        {/* ─── Expandable Room Selection Drawer (The Core Room Selection Flow) ─── */}
+        {/* ─── Expandable Room Selection Drawer (Quick Room Preview) ─── */}
         {showRoomDrawer && (
           <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#0f172a] p-4 sm:p-5 animate-in slide-in-from-top-2">
             <div className="flex items-center justify-between mb-3.5">
               <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <BedDouble className="w-4 h-4 text-blue-600" />
-                <span>Select Room Category at {hotel.name}</span>
+                <span>Rooms at {hotel.name}</span>
               </h4>
-              <span className="text-[11px] text-gray-500">
-                Zero Advance • Instant Reservation Confirmation
-              </span>
+              <Link
+                href={`/hotel/${hotel.id}`}
+                className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              >
+                <span>See All Room Cards &amp; Moving Photos →</span>
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -299,18 +311,6 @@ export default function HotelCard({
                     className="p-3.5 bg-white dark:bg-[#1e293b] rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs flex flex-col justify-between"
                   >
                     <div>
-                      {/* Room Photo if available */}
-                      {room.image_url && (
-                        <div className="aspect-[16/9] rounded-xl overflow-hidden mb-2 bg-gray-100">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={room.image_url}
-                            alt={room.type}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black text-gray-900 dark:text-white">
                           {room.type || `Room ${room.room_number}`}
@@ -320,8 +320,21 @@ export default function HotelCard({
                         </span>
                       </div>
 
+                      {/* Advance Policy note */}
+                      <div className="mt-1">
+                        {room.requires_advance ? (
+                          <span className="text-[10px] text-amber-500 font-bold">
+                            ⚠️ ৳{room.advance_amount} advance required
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-emerald-500 font-bold">
+                            ✓ Zero Advance
+                          </span>
+                        )}
+                      </div>
+
                       <div className="mt-2 flex flex-wrap gap-1">
-                        {(room.facilities || ['Air Conditioning', 'Free Wi-Fi', 'Hot Water']).map(
+                        {(room.facilities || ['Air Conditioning', 'Free Wi-Fi', 'Hot Water']).slice(0, 3).map(
                           (fac, fi) => (
                             <span
                               key={fi}
@@ -342,13 +355,12 @@ export default function HotelCard({
                         <span className="text-[10px] text-gray-400 block">/ night</span>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => onBookRoom(hotel, room)}
-                        className="py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all hover:scale-105"
+                      <Link
+                        href={`/hotel/${hotel.id}`}
+                        className="py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all hover:scale-105"
                       >
-                        Book Room →
-                      </button>
+                        View &amp; Book →
+                      </Link>
                     </div>
                   </div>
                 );
@@ -409,9 +421,11 @@ export default function HotelCard({
             </span>
           </div>
 
-          <h3 className="text-base font-black text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors leading-snug">
-            {hotel.name}
-          </h3>
+          <Link href={`/hotel/${hotel.id}`}>
+            <h3 className="text-base font-black text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors leading-snug hover:underline">
+              {hotel.name}
+            </h3>
+          </Link>
           <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
             {hotel.address}
           </p>
@@ -436,13 +450,14 @@ export default function HotelCard({
             <span className="text-[10px] text-gray-400 block">/ night</span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => onBookRoom(hotel, rooms[0] || null)}
-            className="py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/30 transition-all"
+          {/* Prominent View Details Button */}
+          <Link
+            href={`/hotel/${hotel.id}`}
+            className="py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider shadow-md shadow-blue-600/30 transition-all flex items-center gap-1"
           >
-            Book Now →
-          </button>
+            <span>View Details</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
     </div>

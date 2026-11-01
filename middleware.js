@@ -33,7 +33,7 @@ export async function middleware(request) {
 
   // Quick role bypass check
   const demoRole = request.cookies.get('demo_role')?.value;
-  if (demoRole === 'owner' && isOwnerRoute) {
+  if ((demoRole === 'owner' || demoRole === 'admin') && isOwnerRoute) {
     return NextResponse.next();
   }
   if (demoRole && isCustomerRoute) {
@@ -48,7 +48,7 @@ export async function middleware(request) {
       const secret = new TextEncoder().encode(JWT_SECRET);
       const { payload } = await jwtVerify(token, secret);
 
-      if (isOwnerRoute && payload.role !== 'owner') {
+      if (isOwnerRoute && payload.role !== 'owner' && payload.role !== 'admin') {
         const loginUrl = new URL('/login', request.url);
         loginUrl.searchParams.set('error', 'owner_access_required');
         loginUrl.searchParams.set('redirect', pathname);

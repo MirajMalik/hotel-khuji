@@ -17,6 +17,9 @@ import {
   Phone,
   Printer,
   Sparkles,
+  MapPin,
+  AlertCircle,
+  Check,
 } from 'lucide-react';
 import { formatCurrency, calculateNights } from '@/lib/utils';
 
@@ -42,6 +45,8 @@ export default function HotelBookingModal({
   );
   const [flightNumber, setFlightNumber] = useState('');
   const [flightDepartureTime, setFlightDepartureTime] = useState('');
+  const [advanceConfirmed, setAdvanceConfirmed] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('bkash');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -50,6 +55,9 @@ export default function HotelBookingModal({
   const nights = Math.max(1, calculateNights(checkInDate, checkOutDate));
   const baseRate = Number(room?.base_price || room?.price || hotel?.base_price || 2800);
   const totalAmount = nights * baseRate;
+
+  const requiresAdvance = Boolean(room?.requires_advance);
+  const advanceAmount = Number(room?.advance_amount || 0);
 
   // Automated wake-up call time calculation (2 hours before flight)
   const computedWakeupTime = flightDepartureTime ? (() => {
@@ -72,6 +80,10 @@ export default function HotelBookingModal({
       setError('Please provide your phone or WhatsApp number.');
       return;
     }
+    if (requiresAdvance && !advanceConfirmed) {
+      setError(`This room requires ৳${advanceAmount} advance payment. Please confirm your payment.`);
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -84,8 +96,10 @@ export default function HotelBookingModal({
       guestEmail: guestEmail.trim() || null,
       checkInDate,
       checkOutDate,
-      bookingSource: 'online_booking',
+      bookingSource: 'online', // Registered as an online booking
       totalAmount,
+      advanceRequired: requiresAdvance,
+      advancePaid: requiresAdvance ? advanceAmount : 0,
       flightNumber: flightNumber.trim() ? flightNumber.trim().toUpperCase() : null,
       flightDepartureTime: flightDepartureTime ? new Date(flightDepartureTime).toISOString() : null,
       wakeupCallTime: computedWakeupTime ? computedWakeupTime.toISOString() : null,
@@ -117,7 +131,7 @@ export default function HotelBookingModal({
           guest_phone: bookingPayload.guestPhone,
           check_in_date: bookingPayload.checkInDate,
           check_out_date: bookingPayload.checkOutDate,
-          booking_source: 'online_booking',
+          booking_source: 'online',
           total_amount: bookingPayload.totalAmount,
         })
         .select()
@@ -135,7 +149,6 @@ export default function HotelBookingModal({
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error('Booking submission error:', err);
-      // Fallback confirmation for demonstration/instant booking
       const fallbackId = generateReferenceCode(bookingPayload.guestPhone, bookingPayload.guestName);
       setConfirmation({
         bookingId: fallbackId,
@@ -148,7 +161,7 @@ export default function HotelBookingModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-[#0f172a] rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden my-8">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-[#0f172a] rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden my-8 max-h-[92vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -167,10 +180,12 @@ export default function HotelBookingModal({
             </div>
 
             <h2 className="text-2xl font-black text-center text-gray-900 dark:text-white tracking-tight">
-              {isBn ? 'আপনার হোটেল বুকিং নিশ্চিত হয়েছে!' : 'Hotel Reservation Confirmed!'}
+              {isBn ? 'আপনার অনলাইন হোটেল বুকিং নিশ্চিত হয়েছে!' : 'Online Hotel Reservation Confirmed!'}
             </h2>
             <p className="text-xs text-gray-500 text-center mt-1">
-              Zero advance payment • Settle bill upon arrival at front desk
+              {requiresAdvance
+                ? `৳${advanceAmount} advance confirmed • Settle remaining bill at hotel`
+                : 'Zero advance payment • Settle bill upon arrival at front desk'}
             </p>
 
             {/* Voucher Card */}
@@ -212,7 +227,7 @@ export default function HotelBookingModal({
 
               <div className="flex items-center justify-between pt-1">
                 <span className="text-sm font-black text-gray-900 dark:text-white">
-                  Total Payable at Hotel
+                  Total Room Rate
                 </span>
                 <span className="text-lg font-black text-blue-600 dark:text-blue-400">
                   {formatCurrency(totalAmount)}
@@ -237,8 +252,9 @@ export default function HotelBookingModal({
                       Guaranteed Wake-Up Call: {computedWakeupTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   )}
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 pt-1">
-                    🚐 The hotel airport shuttle will be prepared 90 minutes before your scheduled departure.
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 pt-1 flex items-center gap-1.5">
+                    <Car className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    <span>The hotel airport shuttle will be prepared 90 minutes before your scheduled departure.</span>
                   </p>
                 </div>
               )}
@@ -284,25 +300,25 @@ export default function HotelBookingModal({
             <div className="p-5 sm:p-6 bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-white/20">
-                  Zero Advance Reservation
+                  {requiresAdvance ? `Advance Required: ৳${advanceAmount}` : 'Zero Advance Reservation'}
                 </span>
                 <span className="text-[10px] font-bold text-blue-200">
-                  Pay at Hotel Front Desk
+                  Online Hotel Booking
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black tracking-tight">{hotel.name}</h2>
-              <p className="text-xs text-blue-100 mt-1 flex items-center gap-1">
-                <span>📍 {hotel.address}</span>
-                <span>•</span>
-                <span>{hotel.distanceToAirport || '650m to Terminal 3'}</span>
+              <p className="text-xs text-blue-100 mt-1 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{hotel.address}</span>
               </p>
             </div>
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5">
               {error && (
-                <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold">
-                  {error}
+                <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span>{error}</span>
                 </div>
               )}
 
@@ -329,6 +345,41 @@ export default function HotelBookingModal({
                   <span className="text-[10px] text-gray-400 block">/ night</span>
                 </div>
               </div>
+
+              {/* Advance Payment Notice & Confirmation */}
+              {requiresAdvance ? (
+                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                      <span>Advance Deposit Required by Owner</span>
+                    </span>
+                    <span className="text-xs font-black text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-2.5 py-0.5 rounded-lg">
+                      ৳{advanceAmount}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-600 dark:text-gray-300">
+                    The owner configured this room to require ৳{advanceAmount} advance deposit to confirm your online booking.
+                  </p>
+                  <div className="flex items-center gap-2 pt-1 border-t border-amber-200 dark:border-amber-800/60">
+                    <input
+                      type="checkbox"
+                      id="modalAdvanceCheck"
+                      checked={advanceConfirmed}
+                      onChange={(e) => setAdvanceConfirmed(e.target.checked)}
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 accent-blue-600"
+                    />
+                    <label htmlFor="modalAdvanceCheck" className="text-xs font-bold text-gray-900 dark:text-white cursor-pointer">
+                      I confirm paying ৳{advanceAmount} advance payment
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span><strong>Zero Advance Required</strong> — Pay 100% on arrival at hotel reception desk.</span>
+                </div>
+              )}
 
               {/* 2. Check-in & Check-out Dates */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -410,7 +461,7 @@ export default function HotelBookingModal({
                     <span>Flight Departure Sync (Optional)</span>
                   </div>
                   <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold">
-                    Automated 4:00 AM Wake-Up &amp; Shuttle
+                    Guaranteed 2-Hour Wake-Up &amp; Shuttle
                   </span>
                 </div>
 
@@ -452,7 +503,7 @@ export default function HotelBookingModal({
                 )}
               </div>
 
-              {/* 5. Total Price & Zero Advance Note */}
+              {/* 5. Total Price & Confirmation */}
               <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div>
                   <span className="text-xs text-gray-500 font-medium block">
@@ -463,7 +514,7 @@ export default function HotelBookingModal({
                       {formatCurrency(totalAmount)}
                     </span>
                     <span className="text-xs font-bold text-emerald-600">
-                      • Pay on arrival
+                      {requiresAdvance ? `• ৳${advanceAmount} advance` : '• Pay on arrival'}
                     </span>
                   </div>
                 </div>

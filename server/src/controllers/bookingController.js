@@ -16,7 +16,7 @@ export const createBooking = async (req, res) => {
     checkOutDate,
     check_out_date,
     bookingSource,
-    booking_source = 'walk_in',
+    booking_source = 'online',
     totalAmount,
     total_amount = 0,
     flightNumber,
@@ -27,19 +27,25 @@ export const createBooking = async (req, res) => {
     wakeup_call_time,
     bookedByUserId,
     booked_by_user_id,
+    advanceRequired,
+    advance_required = false,
+    advancePaid,
+    advance_paid = 0,
   } = req.body;
 
   const targetHotelId = hotelId || hotel_id;
   const targetRoomId = roomId || room_id;
-  const targetGuestName = guestName || guest_name || 'Walk-In Guest';
-  const targetGuestPhone = guestPhone || guest_phone || 'Front Desk Check-in';
+  const targetGuestName = guestName || guest_name || 'Guest';
+  const targetGuestPhone = guestPhone || guest_phone || 'Phone not provided';
   const targetCheckIn = checkInDate || check_in_date || new Date().toISOString().split('T')[0];
   const targetCheckOut = checkOutDate || check_out_date || new Date(Date.now() + 86400000).toISOString().split('T')[0];
-  const targetSource = bookingSource || booking_source;
+  const targetSource = bookingSource || booking_source; // 'walk_in' or 'online'
   const targetAmount = totalAmount || total_amount;
   const targetFlightNum = flightNumber || flight_number || null;
   const targetFlightDep = flightDepartureTime || flight_departure_time || null;
   const targetBookedBy = bookedByUserId || booked_by_user_id || req.user?.id || null;
+  const targetAdvanceReq = Boolean(advanceRequired !== undefined ? advanceRequired : advance_required);
+  const targetAdvancePaid = Number(advancePaid !== undefined ? advancePaid : advance_paid) || 0;
   
   // Auto-calculate wake-up call time (default: 2 hours prior to flight departure if not explicitly given)
   let targetWakeup = wakeupCallTime || wakeup_call_time || null;
@@ -58,7 +64,7 @@ export const createBooking = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Insert booking record with flight synchronization fields
+    // 1. Insert booking record with flight sync and advance payment
     const insertBookingQuery = `
       INSERT INTO public.bookings (
         hotel_id,
@@ -74,9 +80,11 @@ export const createBooking = async (req, res) => {
         wakeup_call_completed,
         booking_source,
         total_amount,
+        advance_required,
+        advance_paid,
         status
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, $11, $12, 'confirmed')
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, $11, $12, $13, $14, 'confirmed')
       RETURNING *;
     `;
 
@@ -93,6 +101,8 @@ export const createBooking = async (req, res) => {
       targetWakeup,
       targetSource,
       targetAmount,
+      targetAdvanceReq,
+      targetAdvancePaid,
     ]);
 
     const booking = bookingResult.rows[0];
@@ -108,9 +118,7 @@ export const createBooking = async (req, res) => {
     // 3. Emit real-time updates via Socket.io
     try {
       const io = getIO();
-      // Notify front desk of new booking
       io.to(`hotel:${targetHotelId}`).emit('new_booking', { booking });
-      // Notify front desk room status changed
       io.to(`hotel:${targetHotelId}`).emit('room_status_changed', {
         roomId: targetRoomId,
         status: 'occupied',
@@ -119,7 +127,7 @@ export const createBooking = async (req, res) => {
       console.warn('Socket emit warning:', socketErr.message);
     }
 
-    return res.status(201).json({ data: booking });
+    return res.status(201).json({ data: booking, message: 'Reservation confirmed successfully' });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Error creating booking:', err);
@@ -134,7 +142,12 @@ export const getBookingsByHotel = async (req, res) => {
 
   try {
     const result = await query(
-      `SELECT b.*, r.room_number, r.type as room_type
+      `SELECT 
+        b.*, 
+        r.room_number, 
+        r.type as room_type,
+        COALESCE(r.requires_advance, false) as room_requires_advance,
+        COALESCE(r.advance_amount, 0) as room_advance_amount
        FROM public.bookings b
        JOIN public.rooms r ON b.room_id = r.id
        WHERE b.hotel_id = $1
@@ -174,7 +187,7 @@ export const updateBookingStatus = async (req, res) => {
     const booking = bookingRes.rows[0];
 
     // If booking checked out or cancelled, free up the room
-    if (status === 'checked_out' || status === 'cancelled') {
+    if (status === 'checked_out' || status === 'cancelled' || status === 'completed') {
       await client.query(
         "UPDATE public.rooms SET current_status = 'available' WHERE id = $1",
         [booking.room_id]
@@ -193,11 +206,11 @@ export const updateBookingStatus = async (req, res) => {
       io.to(`hotel:${booking.hotel_id}`).emit('booking_updated', { booking });
       io.to(`hotel:${booking.hotel_id}`).emit('room_status_changed', {
         roomId: booking.room_id,
-        status: status === 'checked_out' || status === 'cancelled' ? 'available' : 'occupied',
+        status: status === 'checked_out' || status === 'cancelled' || status === 'completed' ? 'available' : 'occupied',
       });
     } catch (e) {}
 
-    return res.status(200).json({ data: booking });
+    return res.status(200).json({ data: booking, message: 'Booking status updated successfully' });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Error updating booking status:', err);

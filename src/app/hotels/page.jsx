@@ -19,13 +19,13 @@ import HotelBookingModal from '@/components/hotel-booking/HotelBookingModal';
 import HotelFooter from '@/components/hotel-booking/HotelFooter';
 
 export default function HotelsListingPage() {
-  const { lang } = useHotelStore();
+  const { lang, currentUser: storeUser, setCurrentUser: setStoreUser } = useHotelStore();
   const isBn = lang === 'bn';
 
   // State
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(storeUser);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Active Booking Flow State
@@ -47,6 +47,17 @@ export default function HotelsListingPage() {
     return HOTEL_CURRENCIES.find((c) => c.code === activeCurrency) || HOTEL_CURRENCIES[0];
   }, [activeCurrency]);
 
+  // Real-time auth listener for instant UI updates upon login
+  useEffect(() => {
+    const handleAuth = (e) => {
+      if (e.detail !== undefined) {
+        setCurrentUser(e.detail);
+      }
+    };
+    window.addEventListener('hotel_auth_change', handleAuth);
+    return () => window.removeEventListener('hotel_auth_change', handleAuth);
+  }, []);
+
   // Check user session
   useEffect(() => {
     let isMounted = true;
@@ -55,6 +66,7 @@ export default function HotelsListingPage() {
         const res = await api.get('/auth/me');
         if (isMounted && res?.user) {
           setCurrentUser(res.user);
+          setStoreUser(res.user);
           localStorage.setItem('hotel_user', JSON.stringify(res.user));
           return;
         }
@@ -62,7 +74,9 @@ export default function HotelsListingPage() {
         const stored = typeof window !== 'undefined' ? localStorage.getItem('hotel_user') : null;
         if (stored && isMounted) {
           try {
-            setCurrentUser(JSON.parse(stored));
+            const parsed = JSON.parse(stored);
+            setCurrentUser(parsed);
+            setStoreUser(parsed);
           } catch {}
         }
       }
@@ -71,7 +85,7 @@ export default function HotelsListingPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [setStoreUser]);
 
   // Fetch hotels
   useEffect(() => {
@@ -126,10 +140,12 @@ export default function HotelsListingPage() {
       await api.post('/auth/logout');
     } catch {}
     localStorage.removeItem('hotel_user');
+    localStorage.removeItem('token');
     document.cookie = 'demo_role=; path=/; max-age=0';
     document.cookie = 'token=; path=/; max-age=0';
     setCurrentUser(null);
-  }, []);
+    setStoreUser(null);
+  }, [setStoreUser]);
 
   // Amenities
   const allAmenities = useMemo(() => {
@@ -229,7 +245,7 @@ export default function HotelsListingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#090d16] text-gray-900 dark:text-zinc-50 flex flex-col font-sans transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col font-sans transition-colors duration-200">
       {/* ─── Navigation ─── */}
       <HotelNavbar
         currentUser={currentUser}
@@ -282,23 +298,23 @@ export default function HotelsListingPage() {
             {[1, 2, 3].map((n) => (
               <div
                 key={n}
-                className="bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-800 rounded-3xl p-6 animate-pulse flex flex-col md:flex-row gap-6"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 animate-pulse flex flex-col md:flex-row gap-6 shadow-sm"
               >
-                <div className="w-full md:w-72 aspect-[16/10] bg-gray-200 dark:bg-gray-800 rounded-2xl" />
+                <div className="w-full md:w-72 aspect-[16/10] bg-slate-100 dark:bg-slate-800 rounded-2xl" />
                 <div className="flex-1 space-y-3">
-                  <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded-lg w-2/3" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded-lg w-1/3" />
+                  <div className="h-6 bg-slate-100 dark:bg-slate-800 rounded-lg w-2/3" />
+                  <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-lg w-1/3" />
                 </div>
               </div>
             ))}
           </div>
         ) : filteredAndSortedHotels.length === 0 ? (
-          <div className="text-center py-16 px-4 bg-white dark:bg-[#1e293b] rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
-            <span className="text-5xl block mb-3">🏨</span>
-            <h3 className="text-lg font-black text-gray-900 dark:text-white">
+          <div className="text-center py-16 px-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <span className="text-4xl block mb-3 text-slate-400">🏨</span>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               No Hotels Match Your Criteria
             </h3>
-            <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
+            <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
               Try adjusting your query or reset filters to see all available transit stays.
             </p>
             <button
@@ -309,7 +325,7 @@ export default function HotelsListingPage() {
                 setActiveQuickFilter('all');
                 setPriceFilter('all');
               }}
-              className="mt-5 px-5 py-2.5 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md transition-colors"
+              className="mt-5 px-5 py-2.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-sm transition-colors"
             >
               Reset Filters
             </button>
@@ -366,29 +382,27 @@ export default function HotelsListingPage() {
         />
       )}
 
-      {/* ─── Auth Modal ─── */}
+      {/* ─── Auth Modal (Immediate Session Update) ─── */}
       {showAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div className="relative w-full max-w-md">
             <button
               onClick={() => setShowAuthModal(false)}
-              className="absolute -top-3 -right-3 z-10 w-8 h-8 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center border border-gray-200 dark:border-gray-700 shadow-xl"
+              className="absolute -top-3 -right-3 z-10 w-8 h-8 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-md hover:bg-slate-50 transition-colors"
             >
               ✕
             </button>
-            <div className="bg-white dark:bg-[#1e293b] rounded-3xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700 p-6">
-              <div className="mb-4">
-                <h3 className="text-lg font-black text-gray-900 dark:text-white">
-                  Hotel Khuji Account
-                </h3>
-                <p className="text-xs text-gray-500">Sign in to manage your transit reservations</p>
-              </div>
-              <AuthForm
-                defaultRole="customer"
-                onSuccess={() => setShowAuthModal(false)}
-                redirectPath="/hotels"
-              />
-            </div>
+            <AuthForm
+              defaultRole="customer"
+              onSuccess={(u) => {
+                if (u) {
+                  setCurrentUser(u);
+                  setStoreUser(u);
+                }
+                setShowAuthModal(false);
+              }}
+              redirectPath="/hotels"
+            />
           </div>
         </div>
       )}
